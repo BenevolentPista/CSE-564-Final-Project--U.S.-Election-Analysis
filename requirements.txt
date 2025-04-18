@@ -1,0 +1,5 @@
+numpy
+pandas
+flask
+kneed
+scikit-learn
