@@ -109,23 +109,28 @@
   <!-- Main Page Container -->
   <div class="container-fluid">
     <div class="row g-0">
-      <!-- Left Column -->
       <div class="col-md-6 d-flex flex-column left-column">
         <div class="section section-map flex-grow-1">
           <h3>Section 1: U.S. Map</h3>
+          <div id="geoMapUSA"></div>
         </div>
-
         <div class="section section-bar">
           <h3>Section 2: Electoral Vote Bar</h3>
+          <div id="evPieChart"></div>
         </div>
       </div>
-
       <div class="col-md-6 d-flex flex-column right-column">
         <div class="section section-bar-chart flex-grow-1">
           <h3>Section 3: Bar Chart</h3>
+          <div id="voteCounts"></div>
         </div>
         <div class="section section-scatter flex-grow-1">
-          <h3>Section 4: Scatter Plot</h3>
+          <h3>Section 4: Counties PCP</h3>
+          <div id="countyPCP"></div>
+        </div>
+        <div class="section section-scatter flex-grow-1">
+          <h3>Section 5: Scatter Plot</h3>
+          <div id="turnoutScatterPlot"></div>
         </div>
       </div>
     </div>
