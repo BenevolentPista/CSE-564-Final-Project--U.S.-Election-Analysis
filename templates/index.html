@@ -17,78 +17,82 @@
             z-index: 1000;
         }
 
-        /* Sections styling */
-        .section {
-            border: 2px solid #ccc; /* Thicker border for clearer separation */
-            background-color: transparent; /* Remove background color */
-        }
-
-        .container-fluid {
-            height: calc(100vh - 48px); /* Full height minus header */
-            overflow: hidden;
-        }
-
-        .container-fluid {
-          padding-left: 0;
-          padding-right: 0;
-        }
-
-        /* Ensure left and right columns use full height available */
-        .left-column,
-        .right-column {
-            height: 100%;
-            overflow: hidden;
-        }
-
-        /* Adjust section heights to ensure they fit inside without scrolling */
-        .left-column .section-map {
-            height: 60%;
-        }
-        .left-column .section-bar {
-            height: 40%;
-        }
-        .right-column .section-bar-chart,
-        .right-column .section-scatter {
-            height: 50%;
-        }
-
-        html {
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrolling */
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100vh; /* Full viewport height */
+          overflow: hidden; /* Prevent scrolling */
         }
 
         header {
-            background-color: #333;
-            color: white;
-            text-align: center;
+          background-color: #333;
+          color: white;
+          text-align: center;
+          position: absolute; /* Fix header at the top */
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 48px; /* Set fixed height for the header */
+          line-height: 48px; /* Vertically center the text in header */
+          margin: 0; /* Remove margin */
         }
 
-        /* General body styling */
+        .container-fluid {
+          height: calc(100vh - 48px); /* Full height minus header */
+          padding-left: 0;
+          padding-right: 0;
+          margin-top: 48px; /* Ensure content starts below the fixed header */
+          overflow: hidden;
+        }
+
+        .left-column,
+        .right-column {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .section {
+          border: 1px solid #ccc; /* Thicker border for clearer separation */
+          background-color: transparent; /* Remove background color */
+        }
+
+        .left-column .section-map {
+          height: 60%;
+        }
+
+        .left-column .section-bar {
+          height: 40%;
+        }
+
+         /* General body styling */
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            overflow: hidden; /* Prevent scrolling */
+          font-family: Arial, sans-serif;
+          background-color: #f4f4f9;
+        }
+
+        .right-column .section-bar-chart,
+        .right-column .section-scatter {
+          height: 50%;
         }
 
         /* Styling for bar and dots */
         .bar {
-            fill: rgb(54, 49, 203);
-            stroke: red;
-        }
-        .dot {
-            fill: steelblue;
-            stroke: black;
+          fill: rgb(54, 49, 203);
+          stroke: red;
         }
 
-        /* CSS to center the scatter plot matrix */
+        .dot {
+          fill: steelblue;
+          stroke: black;
+        }
+
         .line {
           fill: none;
           stroke-width: 1.5px;
         }
+
         .line:hover {
           stroke-width: 3px;
         }
@@ -107,31 +111,21 @@
     <div class="row g-0">
       <!-- Left Column -->
       <div class="col-md-6 d-flex flex-column left-column">
-        <!-- Section 1: Map -->
         <div class="section section-map flex-grow-1">
           <h3>Section 1: U.S. Map</h3>
-          <!-- Map and labels go here -->
         </div>
 
-        <!-- Section 2: Electoral Votes Bar -->
         <div class="section section-bar">
           <h3>Section 2: Electoral Vote Bar</h3>
-          <!-- Electoral bar chart goes here -->
         </div>
       </div>
 
-      <!-- Right Column -->
       <div class="col-md-6 d-flex flex-column right-column">
-        <!-- Section 3: Bar Chart -->
         <div class="section section-bar-chart flex-grow-1">
           <h3>Section 3: Bar Chart</h3>
-          <!-- Bar chart goes here -->
         </div>
-
-        <!-- Section 4: Scatter Plot -->
         <div class="section section-scatter flex-grow-1">
           <h3>Section 4: Scatter Plot</h3>
-          <!-- Scatter plot goes here -->
         </div>
       </div>
     </div>
