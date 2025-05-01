@@ -8,6 +8,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v3.min.js"></script>
     <script src="../static/usaGeoMap.js"></script>
+    <script src="../static/votesBarChart.js"></script>
     <style>
         .vertical-divider {
             position: fixed;
@@ -79,7 +80,7 @@
           height: 50%;
         }
 
-        /* Styling for bar and dots */
+        /* Styling for bar and dots
         .bar {
           fill: rgb(54, 49, 203);
           stroke: red;
@@ -88,11 +89,16 @@
         .dot {
           fill: steelblue;
           stroke: black;
-        }
+        } */
 
         .line {
           fill: none;
           stroke-width: 1.5px;
+        }
+
+        .selected {
+          stroke: #000;
+          stroke-width: 4px;
         }
 
         .line:hover {
@@ -113,25 +119,20 @@
     <div class="row g-0">
       <div class="col-md-6 d-flex flex-column left-column">
         <div class="section section-map flex-grow-1">
-          <h3>Section 1: U.S. Map</h3>
           <div id="geoMapUSA"></div>
         </div>
         <div class="section section-bar">
-          <h3>Section 2: Electoral Vote Bar</h3>
           <div id="evPieChart"></div>
         </div>
       </div>
       <div class="col-md-6 d-flex flex-column right-column">
         <div class="section section-bar-chart flex-grow-1">
-          <h3>Section 3: Bar Chart</h3>
           <div id="voteCounts"></div>
         </div>
         <div class="section section-scatter flex-grow-1">
-          <h3>Section 4: Counties PCP</h3>
           <div id="countyPCP"></div>
         </div>
         <div class="section section-scatter flex-grow-1">
-          <h3>Section 5: Scatter Plot</h3>
           <div id="turnoutScatterPlot"></div>
         </div>
       </div>
@@ -169,7 +170,8 @@
       .style("pointer-events", "none")
       .style("visibility", "hidden");
 
-    drawUsaMap(data.votes, fipsToState, data.demPartyCandidate, data.repPartyCandidate)
+    drawUsaMap(data.votes, data.codeToState, fipsToState, data.demPartyCandidate, data.repPartyCandidate)
+    drawBarChart(data.votes, data.codeToState, "US", data.demPartyCandidate, data.repPartyCandidate);
   </script>
 
   <!-- Include Bootstrap 5 JS (for interactive elements like dropdowns) -->

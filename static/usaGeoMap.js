@@ -1,4 +1,4 @@
-function drawUsaMap(votes, fipsToState, demPartyCandidate, repPartyCandidate) {
+function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repPartyCandidate) {
     const width = 960, height = 600;
     const smallStates = ["VT", "NH", "MA", "CT", "RI", "NJ", "DE", "MD", "DC", "HI"];
   
@@ -22,8 +22,8 @@ function drawUsaMap(votes, fipsToState, demPartyCandidate, repPartyCandidate) {
     .attr("class", "candidate-labels")
     .attr("transform", `translate(${width / 2 - 200}, 10)`);
 
-    const demLabels = ["Safe Democratic state where margin of victory was >= 15%", "Likely Democratic state where margin of victory was >= 5% and < 15%", "Lean Democratic state where margin of victory was >= 1% and < 5%", "Tilt Democratic where margin of victory was < 1%"];
-    const repLabels = ["Safe Republican state where margin of victory was >= 15%", "Likely Republican state where margin of victory was >= 5% and < 15%", "Lean Republican state where margin of victory was >= 1% and < 5%", "Tilt Republican where margin of victory was < 1%"];
+    const demLabels = ["Safe Democratic state where margin of victory was >= 15%", "Likely Democratic state where margin of victory was >= 5% and < 15%", "Lean Democratic state where margin of victory was >= 1% and < 5%", "Tilt Democratic state where margin of victory was < 1%"];
+    const repLabels = ["Safe Republican state where margin of victory was >= 15%", "Likely Republican state where margin of victory was >= 5% and < 15%", "Lean Republican state where margin of victory was >= 1% and < 5%", "Tilt Republican state where margin of victory was < 1%"];
     
     // Democratic candidate label
     const demGroup = labelGroup.append("g").attr("transform", `translate(80, 0)`);
@@ -154,33 +154,66 @@ function drawUsaMap(votes, fipsToState, demPartyCandidate, repPartyCandidate) {
         .on("mouseout", function () {
           d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1);
         })
+        .on("click", function (event, d) {
+            const fips = d.id.toString().padStart(2, "0");
+            const stateCode = fipsToState[fips];
+          
+            const isSelected = d3.select(this).classed("selected");
+          
+            d3.selectAll("path").classed("selected", false); // Deselect all
+          
+            if (!isSelected) {
+              // If it was not selected, now we're selecting it
+              d3.select(this).classed("selected", true);
+              drawBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate);
+            } else {
+              // It was selected, now we're deselecting it
+              drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+            }
+          })             
         .attr("id", d => `state-${fipsToState[d.id.toString().padStart(2, "0")]}`);
 
         // Add a dot for DC since it's hard to see
         const dcFeature = states.find(d => fipsToState[d.id.toString().padStart(2, "0")] === "DC");
 
         if (dcFeature) {
-        const centroid = path.centroid(dcFeature);
-        const dcCode = "DC";
-        const dcData = votes[dcCode];
-        const margin = parseFloat(dcData["D Vote Percentage"]) - parseFloat(dcData["R Vote Percentage"]);
-        const color = colorScale(margin);
+            const centroid = path.centroid(dcFeature);
+            const dcCode = "DC";
+            const dcData = votes[dcCode];
+            const margin = parseFloat(dcData["D Vote Percentage"]) - parseFloat(dcData["R Vote Percentage"]);
+            const color = colorScale(margin);
 
-        svg.append("circle")
-            .attr("cx", centroid[0])
-            .attr("cy", centroid[1])
-            .attr("r", 6)
-            .attr("fill", color)
-            .attr("stroke", "#fff")
-            .attr("stroke-width", 1.5)
-            .attr("id", "dc-circle")
-            .attr("cursor", "pointer")
-            .on("mouseover", () => {
-            d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
-            })
-            .on("mouseout", () => {
-            d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
-            });
+            svg.append("circle")
+                .attr("cx", centroid[0])
+                .attr("cy", centroid[1])
+                .attr("r", 6)
+                .attr("fill", color)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5)
+                .attr("id", "dc-circle")
+                .attr("cursor", "pointer")
+                .on("mouseover", () => {
+                    d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
+                })
+                .on("mouseout", () => {
+                    if (!d3.select("#dc-circle").classed("selected")) {
+                    d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+                    }
+                })
+                .on("click", function () {
+                    const isSelected = d3.select(this).classed("selected");
+
+                    d3.selectAll("path").classed("selected", false); // Deselect map states
+                    d3.select("#dc-circle").classed("selected", !isSelected);
+
+                    if (!isSelected) {
+                    d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+                    drawBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
+                    } else {
+                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
+                    drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+                    }
+                });
         }
 
       // Add labels for large states
@@ -247,25 +280,47 @@ function drawUsaMap(votes, fipsToState, demPartyCandidate, repPartyCandidate) {
   
         // Background rectangle
         sidebar.append("rect")
-          .attr("x", 35)
-          .attr("y", y - 14)
-          .attr("width", 40)
-          .attr("height", 30)
-          .attr("rx", 4)
-          .attr("fill", fillColor)
-          .attr("cursor", "pointer")
-          .on("mouseover", () => {
+        .attr("x", 35)
+        .attr("y", y - 14)
+        .attr("width", 40)
+        .attr("height", 30)
+        .attr("rx", 4)
+        .attr("fill", fillColor)
+        .attr("cursor", "pointer")
+        .attr("id", `sidebar-${code}`) // add id for later reference
+        .classed("selected", false)
+        .on("mouseover", () => {
             d3.select(`#state-${code}`).attr("stroke", "#000").attr("stroke-width", 3);
             if (code === "DC") {
-              d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
+                d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
             }
-          })
-          .on("mouseout", () => {
+        })
+        .on("mouseout", () => {
+            const isSelected = d3.select(`#sidebar-${code}`).classed("selected");
+            if (!isSelected) {
             d3.select(`#state-${code}`).attr("stroke", "#fff").attr("stroke-width", 1);
             if (code === "DC") {
-              d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+                d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
             }
-          });
+            }
+        })
+        .on("click", function () {
+            const isSelected = d3.select(this).classed("selected");
+
+            // Deselect all other elements (states, circles, and sidebar)
+            d3.selectAll("path").classed("selected", false);
+            d3.selectAll("#dc-circle").classed("selected", false);
+            d3.selectAll("rect").classed("selected", false);
+
+            // Toggle current one
+            d3.select(this).classed("selected", !isSelected);
+
+            if (!isSelected) {
+            drawBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
+            } else {
+            drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+            }
+        });          
   
         // State label
         sidebar.append("text")
@@ -292,4 +347,10 @@ function drawUsaMap(votes, fipsToState, demPartyCandidate, repPartyCandidate) {
     });
   
     console.log("Finished drawing map");
+}
+
+function drawCountyLevel(){
+  d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json").then(us => {
+    const counties = topojson.feature(us, us.objects.counties).features;
+  });  
 }
