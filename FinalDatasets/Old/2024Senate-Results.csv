@@ -1,0 +1,73 @@
+﻿state,state_abbrev,office_seat_name,special,candidate_name,ballot_party,votes,percent
+Vermont,VT,Class I,False,Gerald Malloy,REP,116512.0,32.07461466250795
+Vermont,VT,Class I,False,Bernie Sanders,IND,229429.0,63.159560967149616
+Wyoming,WY,Class I,False,Scott D. Morrow,DEM,63727.0,24.124211657997744
+Wyoming,WY,Class I,False,John Barrasso,REP,198418.0,75.11224173045328
+Michigan,MI,Class I,False,Mike Rogers,REP,2693680.0,48.29818329562914
+Michigan,MI,Class I,False,Elissa Slotkin,DEM,2712686.0,48.638964409836
+Texas,TX,Class I,False,Colin Allred,DEM,5031249.0,44.55644750631739
+Texas,TX,Class I,False,Ted Cruz,REP,5990741.0,53.05365265969609
+Ohio,OH,Class I,False,Bernie Moreno,REP,2857383.0,50.08892792157936
+Ohio,OH,Class I,False,Sherrod Brown,DEM,2650949.0,46.470211863366885
+New Mexico,NM,Class I,False,Nella Louise Domenici,REP,405978.0,44.94332516707978
+New Mexico,NM,Class I,False,Martin Heinrich,DEM,497333.0,55.05667483292023
+Massachusetts,MA,Class I,False,John Deaton,REP,1365445.0,40.00297068078687
+Massachusetts,MA,Class I,False,Elizabeth Ann Warren,DEM,2041693.0,59.81477483030645
+Minnesota,MN,Class I,False,Amy Klobuchar,DEM,1792441.0,56.201300401370446
+Minnesota,MN,Class I,False,Royce White,REP,1291712.0,40.501134566803046
+Mississippi,MS,Class I,False,Roger F. Wicker,REP,763420.0,62.81219120273885
+Mississippi,MS,Class I,False,Ty Pinkins,DEM,451981.0,37.18780879726115
+Montana,MT,Class I,False,Tim Sheehy,REP,319682.0,52.6431754333385
+Montana,MT,Class I,False,Jon Tester,DEM,276305.0,45.5001300921184
+Nebraska,NE,Class I,False,Dan Osborn,IND,436493.0,46.51777188555059
+Nebraska,NE,Class I,False,Deb Fischer,REP,499124.0,53.19245984380861
+Nebraska,NE,Class II,True,Preston Love Jr.,DEM,349902.0,37.42247367661136
+Nebraska,NE,Class II,True,Pete Ricketts,REP,585103.0,62.577526323388646
+Nevada,NV,Class I,False,Sam Brown,REP,677046.0,46.22332610559776
+Nevada,NV,Class I,False,Jacky S. Rosen,DEM,701105.0,47.86588363163673
+North Dakota,ND,Class I,False,Katrina Christiansen,DEM,121602.0,33.377158431848315
+North Dakota,ND,Class I,False,Kevin Cramer,REP,241569.0,66.3055441951873
+Missouri,MO,Class I,False,Lucas Kunce,DEM,1243728.0,41.84031334617749
+Missouri,MO,Class I,False,Josh Hawley,REP,1651907.0,55.57188267751793
+Pennsylvania,PA,Class I,False,Dave McCormick,REP,3399295.0,48.8184420326643
+Pennsylvania,PA,Class I,False,Robert P. Casey Jr.,DEM,3384180.0,48.60137033064264
+Rhode Island,RI,Class I,False,Patricia Morgan,REP,196039.0,39.84953694292893
+Rhode Island,RI,Class I,False,Sheldon Whitehouse,DEM,294665.0,59.89759080227992
+Tennessee,TN,Class I,False,Gloria Johnson,DEM,1027461.0,34.16206500315201
+Tennessee,TN,Class I,False,Marsha Blackburn,REP,1918743.0,63.79631255136973
+Utah,UT,Class I,False,Caroline Gleich,DEM,464515.0,31.73981164447913
+Utah,UT,Class I,False,John Curtis,REP,914700.0,62.50046976137489
+Utah,UT,Class I,False,Carlton E. Bowen,IAP,83972.0,5.737716679569446
+Virginia,VA,Class I,False,Timothy Michael Kaine,DEM,2415429.0,54.36572655047597
+Virginia,VA,Class I,False,Hung Cao,REP,2018992.0,45.44284554818154
+Washington,WA,Class I,False,Raul Garcia,REP,1549187.0,40.63557489250185
+Washington,WA,Class I,False,Maria Cantwell,DEM,2252577.0,59.085676154413335
+Wisconsin,WI,Class I,False,Eric D. Hovde,REP,1643996.0,48.484201455296365
+Wisconsin,WI,Class I,False,Tammy Baldwin,DEM,1672777.0,49.33300145364483
+Arizona,AZ,Class I,False,Ruben Gallego,DEM,1676335.0,50.05757262123248
+Arizona,AZ,Class I,False,Kari Lake,REP,1595761.0,47.65152677933143
+Connecticut,CT,Class I,False,Matthew M. Corey,REP,678256.0,39.70451787463142
+Connecticut,CT,Class I,False,Christopher S. Murphy,DEM,953646.0,55.82560958262184
+Maine,ME,Class I,False,Demi Kouzounas,REP,284338.0,34.642328900974924
+Maine,ME,Class I,False,Angus S. King Jr.,IND,427331.0,52.06388541659052
+Maine,ME,Class I,False,David Allen Costello,DEM,88891.0,10.830037695758437
+California,CA,Class I,False,Steve Garvey,REP,6312594.0,41.1274828088053
+California,CA,Class I,False,Adam B. Schiff,DEM,9036252.0,58.872517191194696
+California,CA,Class I,True,Steve Garvey,REP,6204637.0,41.249605762332
+California,CA,Class I,True,Adam B. Schiff,DEM,8837051.0,58.750394237668
+Indiana,IN,Class I,False,Valerie McCray,DEM,1097061.0,38.76681730819178
+Indiana,IN,Class I,False,Jim Banks,REP,1659416.0,58.63874197541465
+Maryland,MD,Class I,False,Larry Hogan,REP,1294344.0,42.83952554099487
+Maryland,MD,Class I,False,Angela Alsobrooks,DEM,1650912.0,54.64102803422809
+New Jersey,NJ,Class I,False,Curtis Bashaw,REP,1773589.0,43.99005901837767
+New Jersey,NJ,Class I,False,Andy Kim,DEM,2161491.0,53.61113350257144
+New York,NY,Class I,False,Michael D. Sapraicone,REP,2917044.0,36.41608690392653
+New York,NY,Class I,False,Kirsten E. Gillibrand,DEM,4318903.0,53.9167551046981
+West Virginia,WV,Class I,False,Glenn Elliott,DEM,207548.0,27.757560681380788
+West Virginia,WV,Class I,False,Jim Justice,REP,514079.0,68.75315125909937
+Delaware,DE,Class I,False,Eric Hansen,REP,197753.0,39.502722700087496
+Delaware,DE,Class I,False,Lisa Blunt Rochester,DEM,283298.0,56.591011693827085
+Hawaii,HI,Class I,False,Bob McDermott,REP,160075.0,31.902511743592093
+Hawaii,HI,Class I,False,Mazie K. Hirono,DEM,324194.0,64.61098167860125
+Florida,FL,Class I,False,Debbie Mucarsel-Powell,DEM,4603077.0,42.789754205187336
+Florida,FL,Class I,False,Rick Scott,REP,5977706.0,55.56817112789414

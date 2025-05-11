@@ -1,7 +1,10 @@
 function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repPartyCandidate) {
-    const width = 960, height = 600;
+    console.log("votes = ")
+    console.log(votes)
     const smallStates = ["VT", "NH", "MA", "CT", "RI", "NJ", "DE", "MD", "DC", "HI"];
-  
+    const scale = 100
+    const width = 960, height = 600;
+
     const colorScale = (margin) => {
       const absMargin = Math.abs(margin);
       const isDem = margin >= 0;
@@ -142,8 +145,8 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
           const stateCode = fipsToState[fips];
           const voteData = votes[stateCode];
           if (!voteData) return "#ccc";
-          const margin = parseFloat(voteData["D Vote Percentage"]) - parseFloat(voteData["R Vote Percentage"]);
-          return colorScale(margin);
+          // const margin = parseFloat(voteData["D Vote Percentage"]) - parseFloat(voteData["R Vote Percentage"]);
+          return colorScale(parseFloat(voteData["margin"]));
         })
         .attr("stroke", "#fff")
         .attr("stroke-width", 1)
@@ -180,7 +183,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             const centroid = path.centroid(dcFeature);
             const dcCode = "DC";
             const dcData = votes[dcCode];
-            const margin = parseFloat(dcData["D Vote Percentage"]) - parseFloat(dcData["R Vote Percentage"]);
+            const margin = parseFloat(dcData["margin"]);
             const color = colorScale(margin);
 
             svg.append("circle")
@@ -257,7 +260,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
         .text(d => {
           const code = fipsToState[d.id.toString().padStart(2, "0")];
           const voteData = votes[code];
-          return voteData ? voteData["EVs"] : "";
+          return voteData ? voteData["evs"] : "";
         })
         .attr("y", 9)
         .attr("text-anchor", "middle")
@@ -274,16 +277,16 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
       smallStates.forEach((code, i) => {
         const y = 200 + i * 35;
         const voteData = votes[code];
-        const margin = parseFloat(voteData["D Vote Percentage"]) - parseFloat(voteData["R Vote Percentage"]);
+        const margin = parseFloat(voteData["margin"]);
         const fillColor = colorScale(margin);
-        const electoralVotes = voteData ? voteData["EVs"] : "";
+        const electoralVotes = voteData ? voteData["evs"] : "";
   
         // Background rectangle
         sidebar.append("rect")
         .attr("x", 35)
         .attr("y", y - 14)
         .attr("width", 40)
-        .attr("height", 30)
+        .attr("height", height/20)
         .attr("rx", 4)
         .attr("fill", fillColor)
         .attr("cursor", "pointer")
@@ -316,9 +319,9 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             d3.select(this).classed("selected", !isSelected);
 
             if (!isSelected) {
-            drawBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
+              drawBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
             } else {
-            drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+              drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
             }
         });          
   
