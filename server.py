@@ -42,14 +42,14 @@ def index():
     df2024_president_statelevel = pd.read_csv('FinalDatasets/2024-president-statelevel-results-final.csv')
     d_party_candidate = df2024_president_statelevel[dem_party_candidate].iloc[0]
     r_party_candidate = df2024_president_statelevel[rep_party_candidate].iloc[0]
-    print(df2024_president_statelevel)
+    # print(df2024_president_statelevel)
     
     # Select the numeric columns by excluding the non-numeric ones
     numeric_columns = df2024_president_statelevel.columns.difference(categorical_features)
 
     # Convert those numeric columns to float
     df2024_president_statelevel[numeric_columns] = df2024_president_statelevel[numeric_columns].apply(pd.to_numeric, errors='coerce')
-    print(df2024_president_statelevel)
+    # print(df2024_president_statelevel)
 
     # Extract relevant sub information
     state_to_code_dict = dict(zip(df2024_president_statelevel[state], df2024_president_statelevel[state_code]))
@@ -58,7 +58,7 @@ def index():
     evs_dict = df_evs.set_index(state_code).to_dict(orient='index')
     df_state_votes = df2024_president_statelevel[[state_code, evs, total_votes, dem_party_votes, dem_party_vote_percent, rep_party_votes, rep_party_vote_percent, others_votes, others_vote_percent, margin]]
     president_state_votes_dict = df_state_votes.set_index(state_code).to_dict(orient='index')
-    
+
     # Part-2: Load presidential results at the county level
     # Load Data
     df2024_president_countylevel_votes = pd.read_csv('FinalDatasets/2024-president-countylevel-results-final.csv')
@@ -68,7 +68,7 @@ def index():
 
     # Convert those numeric columns to float
     df2024_president_countylevel_votes[numeric_columns] = df2024_president_countylevel_votes[numeric_columns].apply(pd.to_numeric, errors='coerce')
-    print(df2024_president_countylevel_votes)
+    # print(df2024_president_countylevel_votes)
 
     # Extract county votes
     df2024_president_countylevel_votes = df2024_president_countylevel_votes[[state_code,  "county_name", "votes_gop", "votes_dem", "total_votes", "diff", "per_gop", "per_dem", "per_point_diff"]]
@@ -110,7 +110,8 @@ def index():
                 },
                 'total_votes':    row['total_votes'],
                 'VEP':            row['VEP'],
-                'senate_turnout': row['senate_turnout']
+                'senate_turnout': row['senate_turnout'],
+                'margin': row['margin']
             }
             for _, row in group.iterrows()
         }
@@ -133,26 +134,23 @@ def index():
 
     # Part-7: County details
     df2024_county_details = pd.read_csv('FinalDatasets/2024-county-details-final.csv')
-    # df2024_county_details_dict = df2024_county_details.set_index(['state_code', 'county_name']).to_dict(orient='index')
-
     df2024_county_details_dict = {
         state: (
             group
-            .drop(columns=['state_code'])            # optional: you may not need to keep state_code
-            .set_index('county_name')                 # now index is just county_name
-            .to_dict(orient='index')                  # → { county_name: { votes_gop:…, … } }
+            .drop(columns=['state_code'])
+            .set_index('county_name')
+            .to_dict(orient='index')
         )
         for state, group in df2024_county_details.groupby('state_code')
     }
 
-    # # Part-7: Load county details
-    # # Load Race, Age, Sex Details
-    # df2024_county_race_age_sex = pd.read_csv('FinalDatasets/2024County-RaceAgeSex-Details.csv')
-    # df2024_county_race_age_sex = df2024_county_race_age_sex[df2024_county_race_age_sex["YEAR"] == 5]
-
-    # #Load
-    # df2024_county_age_sex = pd.read_csv('FinalDatasets/2024County-AgeSex-Details.csv')
-    # df2024_county_age_sex = df2024_county_age_sex[df2024_county_age_sex["YEAR"] == 5]
+    # Part-8: Presidential results at the cd level
+    # Load Data
+    df2024_president_cdlevel_votes = pd.read_csv('FinalDatasets/2024-president-cdlevel-results-final.csv')
+    numeric_columns = ['d_total', 'r_total', 'other_total', 'total_votes', 'd_percent', 'r_percent', 'other_percent', 'margin']
+    df2024_president_cdlevel_votes[numeric_columns] = df2024_president_cdlevel_votes[numeric_columns].apply(pd.to_numeric, errors='coerce')
+    df2024_president_cdlevel_votes_dict = df2024_president_cdlevel_votes.set_index('district').to_dict(orient='index')
+    print(df2024_president_cdlevel_votes)
 
     data = {
         'demPartyCandidate': d_party_candidate,
@@ -166,6 +164,9 @@ def index():
             },
             "countyLevel": {
                 'votes': president_county_votes_dict
+            },
+            "cdLevel":{
+                'votes': df2024_president_cdlevel_votes_dict
             }
         },
         'senateResults':{
@@ -181,7 +182,8 @@ def index():
             "cdLevel": {
                 'details': df2024_turnout_house_dict
             }
-        }
+        },
+        'countyDetails': df2024_county_details_dict
     }
 
     # data = {

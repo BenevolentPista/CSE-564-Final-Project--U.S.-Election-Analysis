@@ -9,6 +9,8 @@
   <script src="https://d3js.org/topojson.v3.min.js"></script>
   <script src="../static/usaGeoMap.js"></script>
   <script src="../static/votesBarChart.js"></script>
+  <script src="../static/turnout.js"></script>
+  <script src="../static/splitVoting.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -45,6 +47,24 @@
       overflow: hidden;
     }
 
+    .row-40 {
+      display: flex;
+      height: 40%;
+      overflow: hidden;
+    }
+
+    .row-50 {
+      display: flex;
+      height: 50%;
+      overflow: hidden;
+    }
+
+    .row-60 {
+      display: flex;
+      height: 60%;
+      overflow: hidden;
+    }
+
     .custom-column {
       display: flex;
       flex-direction: column;
@@ -56,19 +76,41 @@
       width: 40%;
     }
 
+    .column-45 {
+      width: 45%;
+    }
+
     .column-50 {
       width: 50%;
+    }
+
+    .column-55 {
+      width: 55%;
     }
 
     .column-30 {
       width: 30%;
     }
 
+    .column-25 {
+      width: 25%;
+    }
+
     .section {
-      /*flex: 1;*/
+      box-sizing: border-box;
       border: 1px solid #ccc;
-      background-color: transparent;
+      background: transparent;
       overflow: hidden;
+    }
+
+    #turnoutPlot svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    #splitVotingPlot svg {
+      width: 100%;
+      height: 100%;
     }
 
     .line {
@@ -94,32 +136,33 @@
   <div class="container-fluid">
     <div class="custom-row">
       <div class="custom-column column-50">
-        <div class="section">
+        <div class="row-60 section">
           <div id="geoMapUSA"></div>
         </div>
-        <div class="section">
-          <div id="evPieChart"></div>
+        <div class="row-40">
+          <div class="section column-50">
+            <div id="evBarPlot"></div>
+          </div>
+          <div class="section column-50">
+            <div id="voteCounts"></div>
+          </div>
         </div>
       </div>
-
       <div class="custom-column column-50">
-        <div class="section">
-          <div id="voteCounts"></div>
+        <div class="row-50">
+          <div class="section column-50">
+            <div id="turnoutPlot"></div>
+          </div>
+          <div class="section column-50">
+            <div id="splitVotingPlot" style="height:100%; width:100%"></div>
+          </div>
         </div>
-        <div class="section">
-          <div id="countyPCP"></div>
+        <div class="row-50">
+          <div class="section">
+            <div id="pcpPlot"></div>
+          </div>
         </div>
       </div>
-
-      <!-- Column 3: 30%
-      <div class="custom-column column-30">
-        <div class="section">
-          <div id="turnoutScatterPlot"></div>
-        </div>
-        <div class="section">
-          <div id="someOtherViz"></div>
-        </div>
-      </div> -->
     </div>
   </div>
 
@@ -154,7 +197,10 @@
       .style("visibility", "hidden");
 
     drawUsaMap(data.presidentResults.stateLevel.votes, data.codeToState, fipsToState, data.demPartyCandidate, data.repPartyCandidate);
-    drawBarChart(data.presidentResults.stateLevel.votes, data.codeToState, "US", data.demPartyCandidate, data.repPartyCandidate);
+    drawEvBarChart(data.presidentResults.stateLevel, data.demPartyCandidate, data.repPartyCandidate);
+    drawVotesBarChart(data.presidentResults.stateLevel.votes, data.codeToState, "US", data.demPartyCandidate, data.repPartyCandidate);
+    drawTurnoutPlot(data.turnout.stateLevel.details, data.presidentResults.stateLevel.votes);
+    drawSplitVotingPlot(data.presidentResults.cdLevel.votes, data.presidentResults.stateLevel.votes, data.houseResults.votes, data.senateResults.votes)
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

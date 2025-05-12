@@ -168,10 +168,10 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             if (!isSelected) {
               // If it was not selected, now we're selecting it
               d3.select(this).classed("selected", true);
-              drawBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate);
+              drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate);
             } else {
               // It was selected, now we're deselecting it
-              drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+              drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
             }
           })             
         .attr("id", d => `state-${fipsToState[d.id.toString().padStart(2, "0")]}`);
@@ -211,10 +211,10 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
 
                     if (!isSelected) {
                     d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
-                    drawBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
+                    drawVotesBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
                     } else {
                     d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
-                    drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+                    drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
                     }
                 });
         }
@@ -319,9 +319,9 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             d3.select(this).classed("selected", !isSelected);
 
             if (!isSelected) {
-              drawBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
+              drawVotesBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
             } else {
-              drawBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+              drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
             }
         });          
   
