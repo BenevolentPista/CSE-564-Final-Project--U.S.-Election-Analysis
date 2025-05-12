@@ -1,239 +1,112 @@
-function drawPCPPlot(completeData, quantitativeFeatures, categoricalFeatures, featuresOrdered, k) {
-    console.log("Complete Data = ");
-    console.log(completeData);
+function drawPcpPlot(countyDetails) {
+  // 0) Flatten into one record per region
+  const data = [];
+  for (const [stateCode, regions] of Object.entries(countyDetails)) {
+    for (const [regionName, values] of Object.entries(regions)) {
+      data.push({ id: `${regionName} (${stateCode})`, ...values });
+    }
+  }
+  if (!data.length) return;
 
-    console.log("Beginning drawPCPPlot")
-    console.log("Initial features ordered:")
-    console.log(featuresOrdered);
+  // 1) Numeric dimensions
+  const dimensions = Object.keys(data[0])
+    .filter(k => k !== "id" && typeof data[0][k] === "number");
 
-    const margin = { top: 70, right: 20, bottom: 20, left: 20 };
-    const width = 1700 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+  // 2) Order of axes
+  const featuresOrdered = dimensions;
 
-    var clusterColumn = "Cluster_ID_k" + k;
-    var clusters = Object.values(completeData).map(d => d[clusterColumn]);
+  // 3) Canvas
+  const margin = { top: 70, right: 20, bottom: 20, left: 20 };
+  const width  = 800 - margin.left - margin.right;
+  const height = 400 - margin.top  - margin.bottom;
 
-    // Define color scale based on clusters
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+  d3.select("#pcpPlot").selectAll("*").remove();
+  const svg = d3.select("#pcpPlot")
+    .append("svg")
+      .attr("width",  width  + margin.left + margin.right)
+      .attr("height", height + margin.top  + margin.bottom)
+    .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Clear the canvas
-    d3.select("#pcpPlot").selectAll("*").remove();
+  // 4) Y-scales: special case per_point_diff → absolute
+  const y = {};
+  dimensions.forEach(dim => {
+    if (dim === "per_point_diff") {
+      // only positive domain [0 .. max|diff|]
+      y[dim] = d3.scaleLinear()
+        .domain([0, d3.max(data, d => Math.abs(d[dim]))]).nice()
+        .range([height, 0]);
+    } else {
+      y[dim] = d3.scaleLinear()
+        .domain(d3.extent(data, d => d[dim])).nice()
+        .range([height, 0]);
+    }
+  });
 
-    const svg = d3.select("#pcpPlot")
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  // 5) X-scale
+  const x = d3.scalePoint()
+    .domain(featuresOrdered)
+    .range([0, width])
+    .padding(0.5);
 
-    const y = {};
+  // 6) Line generator with abs() on per_point_diff
+  const line = d3.line();
+  function path(d) {
+    return line(
+      featuresOrdered.map(dim => {
+        const raw = d[dim];
+        const val = dim === "per_point_diff" ? Math.abs(raw) : raw;
+        return [ x(dim), y[dim](val) ];
+      })
+    );
+  }
 
-    featuresOrdered.forEach(dimension => {
-        if (quantitativeFeatures.includes(dimension)){
-            y[dimension] = d3.scaleLinear()
-                .domain([d3.min(completeData, d => d[dimension])-0.5, d3.max(completeData, d => d[dimension])+0.5])
-                .range([height, 0]);
-        }
-        else{
-            y[dimension] = d3.scaleBand()
-                .domain(Array.from(new Set(completeData.map(d => d[dimension])))) // Get unique categories
-                .range([height, 0])
-                .padding(0.1);  // Adds padding between categories
-        }
-    });
+  // 7) Background lines (light grey)
+  svg.selectAll("path.background")
+    .data(data)
+    .enter().append("path")
+      .attr("class","background")
+      .attr("d", path)
+      .attr("fill","none")
+      .attr("stroke","#eee")
+      .attr("stroke-width",1);
 
-    // Add an x-axis for positioning the dimensions
-    const x = d3.scalePoint()
-        .domain(featuresOrdered)  // Combine both types
-        .range([0, width])
-        .padding(1);
+  // 8) Foreground lines, colored by per_point_diff sign
+  svg.selectAll("path.foreground")
+    .data(data)
+    .enter().append("path")
+      .attr("class","foreground")
+      .attr("d", path)
+      .attr("fill","none")
+      .attr("stroke", d => d.per_point_diff < 0 ? "steelblue" : "rgb(191,29,41)")
+      .attr("stroke-width",1)
+      .attr("stroke-opacity",0.7)
+    .append("title")
+      .text(d => `${d.id}\n` +
+        featuresOrdered.map(dim => {
+          const v = (dim === "per_point_diff" ? Math.abs(d[dim]) : d[dim]).toFixed(2);
+          return `${dim}: ${v}`;
+        }).join("\n")
+      );
 
-    // Draw the lines for each record in the dataset
-    svg.selectAll(".line")
-        .data(completeData)
-        .enter()
-        .append("path")
-        .attr("class", "line")
-        .attr("d", function(d) {
-            return d3.line()(featuresOrdered.map(function(p) {
-                return [x(p), y[p].bandwidth ? y[p](d[p]) + y[p].bandwidth() / 2 : y[p](d[p])];
-            }));
-        })
-        .style("opacity", 0.5)
-        .style("stroke", function(d, i) { return colorScale(clusters[i]); })
-        .on("mouseover", function(event, d) {
-            let hoveredColor = colorScale(clusters[completeData.indexOf(d)]); // Get color of hovered line
-            svg.selectAll(".line")
-                .transition().duration(200)
-                .style("opacity", function(lineData) {
-                    return colorScale(clusters[completeData.indexOf(lineData)]) === hoveredColor ? 1 : 0.1;
-                });
-        })
-        .on("mouseout", function() {
-            svg.selectAll(".line")
-                .transition().duration(200)
-                .style("opacity", 0.5); // Restore original opacity
-        });
+  // 9) Axes per dimension
+  const axis = d3.axisLeft().ticks(5);
+  const g = svg.selectAll(".dimension")
+    .data(featuresOrdered)
+    .enter().append("g")
+      .attr("class","dimension")
+      .attr("transform", dim => `translate(${x(dim)},0)`);
 
-    // Adding drag functionality for axes
-    const drag = d3.drag()
-        .on("start", function(event, d) {
-            console.log("Features ordering at start:")
-            console.log(data.featuresOrdered);
+  // 9a) draw axis
+  g.append("g")
+    .each(function(dim) { d3.select(this).call(axis.scale(y[dim])); })
+    .selectAll("text")
+      .style("font-size","9px");
 
-            d3.select(this).raise().classed("active", true);
-        })
-        .on("drag", function(event, d) {
-            // x.domain(featuresOrdered.sort((a, b) => x(a) - x(b))); // Reorder features based on position
-            d3.select(this).attr("transform", `translate(${event.x}, 0)`);
-        })
-        .on("end", function(event, d) {
-            d3.select(this).classed("active", false);
-        
-            // Capture updated x positions of all axes
-            let positions = [];
-            svg.selectAll(".dimension").each(function(dim) {
-                var xVal = extractDimensionX(this)
-                positions.push({
-                    key: dim,
-                    x: xVal
-                });
-            });
-        
-            // Sort axes based on their x position
-            positions.sort((a, b) => a.x - b.x);
-            featuresOrdered = positions.map(d => d.key);
-        
-            // Update x scale domain
-            x.domain(featuresOrdered);
-        
-            // Apply transitions to reposition axes smoothly
-            updateAxes(svg, x);
-            redrawLines(svg, featuresOrdered, x, y);
-
-            data.featuresOrdered = featuresOrdered;
-            console.log("Data features ordering at end:")
-            console.log(data.featuresOrdered);
-        });        
-    
-    // Draw the axes for each dimension
-    svg.selectAll(".dimension")
-        .data(featuresOrdered)  // Combine both types
-        .enter()
-        .append("g")
-        .attr("class", "dimension")
-        .attr("transform", (d, i) => `translate(${x(d)}, 0)`)
-        .attr("id", (d, i) => "axis-" + d)
-        .attr("data-dimension", (d, i) => d)
-        .call(drag)
-        .each(function(d) {
-            d3.select(this).call(d3.axisLeft(y[d]));
-        })
-        .append("text")
-            .style("text-anchor", "middle")
-            .attr("y", -30)
-            .style("fill", "black")
-            .each(function(d) {
-                const text = d3.select(this);
-                const words = d.split(" "); // Split label into words (assuming space separation)
-                
-                words.forEach((word, i) => {
-                    text.append("tspan")
-                        .attr("x", 0)
-                        .attr("dy", i === 0 ? 0 : 12) // Offset each line
-                        .text(word);
-                });
-            });
-    
-    svg.selectAll("text")
-        .style("font-weight", "bold");
-
-    svg.selectAll(".dimension")
-        .each(function(d) {
-            let axis = d3.axisLeft(y[d]);
-            var axisFeature = d3.select(this).attr("data-dimension");
-
-            var xVal;
-            if (categoricalFeatures.includes(axisFeature)){
-                if (axisFeature === "Generation"){
-                    xVal = -18;
-                }
-                else{
-                    xVal = -27;
-                }
-            }
-            else{
-                xVal = -18
-            }
-
-            d3.select(this).call(axis)
-                .selectAll(".tick text") // Select tick labels
-                .each(function() {
-                    let text = d3.select(this);
-                    text.style("text-anchor", "middle");
-
-                    var alignFlag = false;
-                    var string = text.text();
-                    if (string === "No Eggs" || string === "Human Like"){
-                        alignFlag = true;
-                    }
-
-                    let words = text.text().split(" "); // Split label into words
-                    text.text(""); // Clear original text
-
-                    words.forEach((word, i) => {
-                        if (alignFlag){
-                            text.append("tspan")
-                                .attr("x", xVal)
-                                .attr("dy", i === 0 ? "-0.32em" : "1.0em") // Offset each line
-                                .text(word);
-                        }
-                        else{
-                            text.append("tspan")
-                                .attr("x", xVal)
-                                .attr("dy", i === 0 ? "0.32em" : "1.0em") // Offset each line
-                                .text(word);
-                        }
-                    });
-
-                    alignFlag = false;
-                });
-        });
-
-
-    // Add title
-    const title = "Parallel Coordinates Plot (PCP)";
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", -10 - margin.top / 2)
-        .attr("text-anchor", "middle")
-        .style("font-size", "1.5rem")
-        .style("font-weight", "bold")
-        .text(title);
-
-    console.log("After line drawing, features ordered:")
-    console.log(featuresOrdered);
-}
-
-function updateAxes(svg, x) {
-    svg.selectAll(".dimension")
-        .transition().duration(500)
-        .attr("transform", d => `translate(${x(d)}, 0)`);
-}
-
-function redrawLines(svg, featuresOrdered, x, y) {
-    console.log("Redrawing lines");
-
-    svg.selectAll(".line")
-        .transition().duration(500) // Smooth transition
-        .attr("d", function(d) {
-            return d3.line()(featuresOrdered.map(function(p) {
-                return [x(p), y[p].bandwidth ? y[p](d[p]) + y[p].bandwidth() / 2 : y[p](d[p])];
-            }));
-        });
-}
-
-function extractDimensionX(d){
-    const transformAttr = d3.select(d).attr("transform");
-    return transformAttr ? parseFloat(transformAttr.match(/translate\(([^,]+)/)[1]) : 0;
+  // 9b) dimension label
+  g.append("text")
+    .attr("y",-15)
+    .attr("text-anchor","middle")
+    .style("font-size","11px")
+    .text(dim => dim);
 }

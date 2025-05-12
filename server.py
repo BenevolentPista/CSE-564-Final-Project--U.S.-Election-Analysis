@@ -134,6 +134,9 @@ def index():
 
     # Part-7: County details
     df2024_county_details = pd.read_csv('FinalDatasets/2024-county-details-final.csv')
+
+    pcp_columns = ['state_name', 'state_code', 'county_name', 'population', 'turnout', 'per_point_diff', 'poverty_percent', 'college_educated_percent', 'households_total', 'households_median_income']
+    df2024_county_details = df2024_county_details[pcp_columns]
     df2024_county_details_dict = {
         state: (
             group
@@ -151,6 +154,10 @@ def index():
     df2024_president_cdlevel_votes[numeric_columns] = df2024_president_cdlevel_votes[numeric_columns].apply(pd.to_numeric, errors='coerce')
     df2024_president_cdlevel_votes_dict = df2024_president_cdlevel_votes.set_index('district').to_dict(orient='index')
     print(df2024_president_cdlevel_votes)
+
+    # Part-9: Load state details
+    df2024_state_details = pd.read_csv('FinalDatasets/2024-state-details-final.csv')
+    df2024_state_details_dict = df2024_state_details.set_index('state_code').to_dict(orient='index')
 
     data = {
         'demPartyCandidate': d_party_candidate,
@@ -183,17 +190,9 @@ def index():
                 'details': df2024_turnout_house_dict
             }
         },
-        'countyDetails': df2024_county_details_dict
+        'countyDetails': df2024_county_details_dict,
+        'stateDetails': df2024_state_details_dict
     }
-
-    # data = {
-    #     'demPartyCandidate': d_party_candidate,
-    #     'repPartyCandidate': r_party_candidate,
-    #     'stateToCode': state_to_code_dict,
-    #     'codeToState': us_code_to_state,
-    #     'evs': evs_dict,
-    #     'votes': state_votes_dict
-    # }
 
     return render_template('index.html', data=data)
 
