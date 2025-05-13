@@ -16,41 +16,39 @@ function drawSplitVotingPlot(presidentCdLevelResults, presidentStateLevelResults
   // 1) Build a unified data array
   const dataPoints = [];
 
-  // — House points —
-  console.log("Check house results")
-  console.log(houseResults)
-  console.log("Check president results by CD")
-  console.log(presidentCdLevelResults)
-  Object.entries(houseResults).forEach(([district, hr]) => {
-    const pr = presidentCdLevelResults[district];
-    if (!pr) return;
-    const x = pr.margin*-1;              // pres margin
-    const y = hr.margin * (hr.party_1 === "D" ? -1 : 1);
-    dataPoints.push({ id: district, type: "house", x, y });
-  });
+  // // — House points —
+  // console.log("Check house results")
+  // console.log(houseResults)
+  // console.log("Check president results by CD")
+  // console.log(presidentCdLevelResults)
+  // Object.entries(houseResults).forEach(([district, hr]) => {
+  //   const pr = presidentCdLevelResults[district];
+  //   if (!pr) return;
+  //   const x = pr.margin;              // pres margin
+  //   const y = hr.margin;
+  //   dataPoints.push({ id: `${district}-cmp`, type: "house", x, y });
+  // });
 
   // — Senate points —
   Object.entries(senateResults).forEach(([state, races]) => {
+    if (state === "US"){
+      return;
+    }
+
     const pr = presidentStateLevelResults[state];
     if (!pr) return;
     Object.entries(races).forEach(([cls, sr]) => {
       const sign = (sr.party1.ballot_party === "DEM" || sr.party1.ballot_party === "IND") ? -1 : 1;
-      const x = pr.margin*-1;
-      const y = sr.margin * sign;
+      const x = pr.diff_percent;
+      const y = sr.margin;
 
-      if (state === "MD"){
-        console.log(state);
-        console.log(x)
-        console.log(y)
-      }
-
-      dataPoints.push({ id: `${state} (${cls})`, type: "senate", x, y });
+      dataPoints.push({ id: `${state}-(${cls})-cmp`, type: "senate", x, y });
     });
   });
 
   // 2) Setup SVG canvas
-  const margin = { top: 40, right: 20, bottom: 40, left: 70 };
-  const vbW = 500, vbH = 500;
+  const margin = { top: 40, right: 20, bottom: 60, left: 70 };
+  const vbW = 500, vbH = 450;
   const width  = vbW  - margin.left - margin.right;
   const height = vbH  - margin.top  - margin.bottom;
 
@@ -110,7 +108,7 @@ function drawSplitVotingPlot(presidentCdLevelResults, presidentStateLevelResults
       .attr("fill",    d => quadrantColor(d))
       .attr("stroke",  d => d.type === "house" ? "steelblue" : "orange")
       .attr("stroke-width", 1.5)
-      .attr("opacity", 0.8)
+      // .attr("opacity", 0.8)
     .append("title")
       .text(d =>
         `${d.id}\nPresident margin: ${d.x.toFixed(1)}%\n` +
@@ -119,21 +117,19 @@ function drawSplitVotingPlot(presidentCdLevelResults, presidentStateLevelResults
 
   // 8) Axis labels
   svg.append("text")
-     .attr("x", width/2).attr("y", height + 35)
+     .attr("x", width/2).attr("y", height + 45)
      .attr("text-anchor", "middle")
-     .style("font-weight","bold")
      .text("President margin (%)");
 
   svg.append("text")
      .attr("transform", "rotate(-90)")
-     .attr("y", -40).attr("x", -height/2)
+     .attr("y", -50).attr("x", -height/2)
      .attr("text-anchor", "middle")
-     .style("font-weight","bold")
      .text("House/Senate margin (%)");
 
   // 9) Title
   svg.append("text")
-     .attr("x", width/2).attr("y", -10)
+     .attr("x", width/2).attr("y", -20)
      .attr("text-anchor", "middle")
      .style("font-size","16px")
      .style("font-weight","bold")

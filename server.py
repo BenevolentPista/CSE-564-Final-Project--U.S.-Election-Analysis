@@ -26,7 +26,7 @@ update_pcp = False
 year = 'year'; state = "state_name"; state_code = "state_code"; evs = "evs"; dem_party_candidate = "d_candidate"; dem_party_votes = "total_d_votes"
 dem_party_vote_percent = "d_vote_percentage"; dem_party_evs = "d_evs" ;rep_party_candidate = "r_candidate"; rep_party_votes = "total_r_votes"
 rep_party_vote_percent = "r_vote_percentage"; rep_party_evs = "r_evs"; others_votes = "total_others_votes"; others_vote_percent = "others_vote_percentage"; total_votes = "total_votes"
-margin = "margin"
+margin = "diff_percent"
 
 features = [
     year, state, state_code, dem_party_candidate, dem_party_votes, dem_party_vote_percent, dem_party_evs, rep_party_candidate,

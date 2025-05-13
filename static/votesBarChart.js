@@ -14,8 +14,8 @@ function drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, rep
   ];
 
   const margin = { top: 30, right: 20, bottom: 30, left: 80 },
-        width = 400 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
+        width = 450 - margin.left - margin.right,
+        height = 340 - margin.top - margin.bottom;
 
   const svg = d3.select("#voteCounts")
     .append("svg")
@@ -87,7 +87,7 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
 
   // color scale
   const colorScale = (margin) => {
-    const absMargin = Math.abs(margin), isDem = margin >= 0;
+    const absMargin = Math.abs(margin), isDem = margin < 0;
     if (absMargin < 1)  return isDem ? "rgb(148,155,179)" : "rgb(207,137,128)";
     if (absMargin < 5)  return isDem ? "rgb(138,175,255)" : "rgb(255,139,152)";
     if (absMargin < 15) return isDem ? "rgb(87,124,204)"  : "rgb(255,88,101)";
@@ -100,20 +100,20 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
     if (state === "US") return;
     let evsD, evsR, mD, mR;
     if (state === "ME") {
-      evsD = 3; evsR = 1; mD = v.margin; mR = -9.04;
+      evsD = 3; evsR = 1; mD = v.diff_percent; mR = 9.04;
     } else if (state === "NE") {
-      evsD = 1; evsR = 4; mD = 4.59;   mR = v.margin;
+      evsD = 1; evsR = 4; mD = -4.59;   mR = v.diff_percent;
     } else {
       evsD = evsByState[state].d_evs;
       evsR = evsByState[state].r_evs;
-      mD = mR = v.margin;
+      mD = mR = v.diff_percent;
     }
-    if (evsD > 0) demSegments.push({state, ev: evsD, margin: mD});
-    if (evsR > 0) repSegments.push({state, ev: evsR, margin: mR});
+    if (evsD > 0) demSegments.push({state, ev: evsD, diff_percent: mD});
+    if (evsR > 0) repSegments.push({state, ev: evsR, diff_percent: mR});
   });
 
-  demSegments.sort((a,b) => b.margin - a.margin);
-  repSegments.sort((a,b) => a.margin - b.margin);
+  demSegments.sort((a,b) => a.diff_percent - b.diff_percent);
+  repSegments.sort((a,b) => b.diff_percent - a.diff_percent);
   let cum = 0;
   demSegments.forEach(d => { d.x0 = cum; cum += d.ev; });
   const totalDemEV = cum;
@@ -122,8 +122,8 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
   const totalRepEV = cum;
 
   const margin = { top: 30, right: 20, bottom: 30, left: 50 };
-  const width  = 400 - margin.left - margin.right;
-  const height = 300 - margin.top - margin.bottom;
+  const width  = 450 - margin.left - margin.right;
+  const height = 340 - margin.top - margin.bottom;
   const barHeight = height / 4;
 
   // clear & svg
@@ -192,9 +192,37 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
         .attr("y", y0 + 10)
         .attr("height", barHeight)
         .attr("width", d => x(d.ev))
-        .attr("fill", d => colorScale(d.margin))
-      .append("title")
-        .text(d => `${d.state}: ${d.ev} EVs, margin ${d.margin > 0 ? "+" : ""}${d.margin}%`);
+        .attr("fill", d => colorScale(d.diff_percent))
+        .attr("id", d => {
+          var stateCode = `${d.state}-bar`;
+
+          var marginText, party;
+          var absMargin = Math.abs(d.diff_percent);
+          if(absMargin < 1){
+            marginText = "Tilt";
+          }
+          else if(absMargin < 5 && absMargin>=1){
+            marginText = "Lean";
+          }
+          else if(absMargin < 15 && absMargin>=5){
+            marginText = "Likely";
+          }
+          else{
+            marginText = "Solid";
+          }
+
+          if(d.diff_percent < 0){
+            party = "D"
+          }
+          else{
+            party = "R"
+          }
+
+          var id = `${stateCode}-${marginText}-${party}`
+          return id;
+        })
+        .append("title")
+        .text(d => `${d.state}: ${d.ev} EVs, margin ${d.diff_percent > 0 ? "+" : ""}${d.diff_percent}%`);
   }
 
   drawSegments(demSegments, demPartyCandidate);

@@ -1,4 +1,6 @@
 function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repPartyCandidate) {
+    console.log("Data test");
+    console.log(data)
     console.log("votes = ")
     console.log(votes)
     const smallStates = ["VT", "NH", "MA", "CT", "RI", "NJ", "DE", "MD", "DC", "HI"];
@@ -7,7 +9,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
 
     const colorScale = (margin) => {
       const absMargin = Math.abs(margin);
-      const isDem = margin >= 0;
+      const isDem = margin < 0;
       if (absMargin < 1) return isDem ? "rgb(148, 155, 179)" : "rgb(207, 137, 128)";
       if (absMargin < 5) return isDem ? "rgb(138, 175, 255)" : "rgb(255, 139, 152)";
       if (absMargin < 15) return isDem ? "rgb(87, 124, 204)" : "rgb(255, 88, 101)";
@@ -38,7 +40,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     .attr("rx", 6);
 
     demGroup.append("text")
-    .text(demPartyCandidate)
+    .text(`${demPartyCandidate} 226`)
     .attr("x", 90)
     .attr("y", 20)
     .attr("text-anchor", "middle")
@@ -89,7 +91,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     .attr("rx", 6);
 
     repGroup.append("text")
-    .text(repPartyCandidate)
+    .text(`${repPartyCandidate} 312`)
     .attr("x", 90)
     .attr("y", 20)
     .attr("text-anchor", "middle")
@@ -146,7 +148,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
           const voteData = votes[stateCode];
           if (!voteData) return "#ccc";
           // const margin = parseFloat(voteData["D Vote Percentage"]) - parseFloat(voteData["R Vote Percentage"]);
-          return colorScale(parseFloat(voteData["margin"]));
+          return colorScale(parseFloat(voteData["diff_percent"]));
         })
         .attr("stroke", "#fff")
         .attr("stroke-width", 1)
@@ -168,10 +170,11 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             if (!isSelected) {
               // If it was not selected, now we're selecting it
               d3.select(this).classed("selected", true);
+
               drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate);
             } else {
               // It was selected, now we're deselecting it
-              drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+              resetPlots();
             }
           })             
         .attr("id", d => `state-${fipsToState[d.id.toString().padStart(2, "0")]}`);
@@ -183,7 +186,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             const centroid = path.centroid(dcFeature);
             const dcCode = "DC";
             const dcData = votes[dcCode];
-            const margin = parseFloat(dcData["margin"]);
+            const margin = parseFloat(dcData["diff_percent"]);
             const color = colorScale(margin);
 
             svg.append("circle")
@@ -210,11 +213,12 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
                     d3.select("#dc-circle").classed("selected", !isSelected);
 
                     if (!isSelected) {
-                    d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
-                    drawVotesBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
+                      d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+                      drawVotesBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
                     } else {
-                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
-                    drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+                      d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
+                      resetPlots();
+                      // drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
                     }
                 });
         }
@@ -277,7 +281,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
       smallStates.forEach((code, i) => {
         const y = 200 + i * 35;
         const voteData = votes[code];
-        const margin = parseFloat(voteData["margin"]);
+        const margin = parseFloat(voteData["diff_percent"]);
         const fillColor = colorScale(margin);
         const electoralVotes = voteData ? voteData["evs"] : "";
   
@@ -321,7 +325,8 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             if (!isSelected) {
               drawVotesBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
             } else {
-              drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
+              resetPlots();
+              // drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
             }
         });          
   
