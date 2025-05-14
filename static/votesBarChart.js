@@ -1,4 +1,4 @@
-function drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate) {
+function drawVotesBarChart(votes, codeToState, demPartyCandidate, repPartyCandidate, stateCode) {
   d3.select("#voteCounts").selectAll("*").remove();
 
   const data = votes[stateCode];
@@ -14,8 +14,8 @@ function drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, rep
   ];
 
   const margin = { top: 30, right: 20, bottom: 30, left: 80 },
-        width = 450 - margin.left - margin.right,
-        height = 340 - margin.top - margin.bottom;
+        width = 900 - margin.left - margin.right,
+        height = 170 - margin.top - margin.bottom;
 
   const svg = d3.select("#voteCounts")
     .append("svg")
@@ -81,7 +81,7 @@ function drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, rep
     .text(title);
 }
 
-function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) {
+function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, stateCode = null) {
   const votesByState = dataPresidential.votes;
   const evsByState   = dataPresidential.evs;
 
@@ -121,9 +121,9 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
   repSegments.forEach(d => { d.x0 = cum; cum += d.ev; });
   const totalRepEV = cum;
 
-  const margin = { top: 30, right: 20, bottom: 30, left: 50 };
-  const width  = 450 - margin.left - margin.right;
-  const height = 340 - margin.top - margin.bottom;
+  const margin = { top: 30, right: 20, bottom: 30, left: 80 };
+  const width  = 900 - margin.left - margin.right;
+  const height = 170 - margin.top  - margin.bottom;
   const barHeight = height / 4;
 
   // clear & svg
@@ -151,37 +151,10 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
       .range([0, height])
       .paddingInner(0.4);
 
-  const yAxisG = svg.append("g")
-      .attr("class", "y-axis")
-      .call(d3.axisLeft(y));
+    // Y Axis (parties)
+  svg.append("g")
+    .call(d3.axisLeft(y));
 
-  // Move labels left…
-  yAxisG.selectAll("text")
-      .attr("x", -10)
-      .attr("y", -5)
-      .attr("text-anchor", "end");
-
-  // Then word-wrap…
-  yAxisG.selectAll("text")
-    .each(function(d) {
-      const parts = d.split(" ");
-      const txt = d3.select(this).text("");
-      parts.forEach((word, i) => {
-        txt.append("tspan")
-          .attr("x", -10)      // make sure each tspan uses the same x
-          .attr("dy", i === 0 ? "0em" : "1.2em")
-          .text(word);
-      });
-    });
-
-  // dashed 270-EV threshold line
-  svg.append("line")
-      .attr("x1", x(270)).attr("y1", 0)
-      .attr("x2", x(270)).attr("y2", height)
-      .attr("stroke", "black")
-      .attr("stroke-dasharray", "4 4");
-
-  // draw the two bars
   function drawSegments(segments, name) {
     const y0 = y(name);
     svg.selectAll(`.seg-${name}`)
@@ -192,34 +165,48 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
         .attr("y", y0 + 10)
         .attr("height", barHeight)
         .attr("width", d => x(d.ev))
-        .attr("fill", d => colorScale(d.diff_percent))
-        .attr("id", d => {
-          var stateCode = `${d.state}-bar`;
+        .attr("fill", d => {
+          if (stateCode && d.state === stateCode) {
+            return "rgb(255, 215, 0)";
+          }
+          return colorScale(d.diff_percent);
+        })
+        .attr("stroke", "none") // <-- No border by default
+        .attr("stroke-width", 3)
+        .attr("id", d => `${d.state}-bar`)
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .attr("stroke", "rgb(255, 215, 0)")
+            .attr("stroke-width", 3);
+        })
+        .on("mouseout", function(event, d) {
+          const bar = d3.select(this);
+          if (!bar.classed("selected")) {
+            bar.attr("stroke", "none");
+          }
+        })
+        .on("click", function(event, d) {
+          const bar = d3.select(this);
+          const wasSelected = bar.classed("selected");
 
-          var marginText, party;
-          var absMargin = Math.abs(d.diff_percent);
-          if(absMargin < 1){
-            marginText = "Tilt";
-          }
-          else if(absMargin < 5 && absMargin>=1){
-            marginText = "Lean";
-          }
-          else if(absMargin < 15 && absMargin>=5){
-            marginText = "Likely";
-          }
-          else{
-            marginText = "Solid";
-          }
+          // Deselect all
+          svg.selectAll("rect")
+            .classed("selected", false)
+            .attr("fill", b => colorScale(b.diff_percent))
+            .attr("stroke", "none");
 
-          if(d.diff_percent < 0){
-            party = "D"
-          }
-          else{
-            party = "R"
-          }
+          if (!wasSelected) {
+            bar.classed("selected", true)
+              .attr("fill", "rgb(255, 215, 0)")
+              .attr("stroke", "rgb(255, 215, 0)")
+              .attr("stroke-width", 3);
 
-          var id = `${stateCode}-${marginText}-${party}`
-          return id;
+            const code = d.state;
+            const mapElem = code === "DC" ? d3.select("#dc-circle") : d3.select(`#state-${code}`);
+            if (!mapElem.empty()) {
+              mapElem.node().dispatchEvent(new Event("click"));
+            }
+          }
         })
         .append("title")
         .text(d => `${d.state}: ${d.ev} EVs, margin ${d.diff_percent > 0 ? "+" : ""}${d.diff_percent}%`);
@@ -228,7 +215,12 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
   drawSegments(demSegments, demPartyCandidate);
   drawSegments(repSegments, repPartyCandidate);
 
-  // total labels at bar-ends
+  svg.append("line")
+    .attr("x1", x(270)).attr("y1", 0)
+    .attr("x2", x(270)).attr("y2", height)
+    .attr("stroke", "black")
+    .attr("stroke-dasharray", "4 4");
+
   svg.append("text")
       .attr("x", x(totalDemEV)+5)
       .attr("y", y(demPartyCandidate) + barHeight/2 + 15)
@@ -239,7 +231,6 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate) 
       .attr("y", y(repPartyCandidate) + barHeight/2 + 15)
       .text(totalRepEV).style("font-weight","bold");
 
-  // title
   svg.append("text")
       .attr("x", width/2).attr("y", -10)
       .attr("text-anchor","middle")

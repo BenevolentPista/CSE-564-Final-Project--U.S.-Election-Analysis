@@ -18,7 +18,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
   
     const svg = d3.select("#geoMapUSA")
       .append("svg")
-      .attr("viewBox", `50 0 ${width} ${height}`)
+      .attr("viewBox", `50 -17 ${width} ${height}`)
       .style("width", "100%")
       .style("height", "100%");
 
@@ -27,8 +27,8 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     .attr("class", "candidate-labels")
     .attr("transform", `translate(${width / 2 - 200}, 10)`);
 
-    const demLabels = ["Safe Democratic state where margin of victory was >= 15%", "Likely Democratic state where margin of victory was >= 5% and < 15%", "Lean Democratic state where margin of victory was >= 1% and < 5%", "Tilt Democratic state where margin of victory was < 1%"];
-    const repLabels = ["Safe Republican state where margin of victory was >= 15%", "Likely Republican state where margin of victory was >= 5% and < 15%", "Lean Republican state where margin of victory was >= 1% and < 5%", "Tilt Republican state where margin of victory was < 1%"];
+    const demLabels = ["Safe Democratic result where margin of victory was >= 15%", "Likely Democratic result where margin of victory was >= 5% and < 15%", "Lean Democratic result where margin of victory was >= 1% and < 5%", "Tilt Democratic result where margin of victory was < 1%"];
+    const repLabels = ["Safe Republican result where margin of victory was >= 15%", "Likely Republican result where margin of victory was >= 5% and < 15%", "Lean Republican result where margin of victory was >= 1% and < 5%", "Tilt Republican result where margin of victory was < 1%"];
     
     // Democratic candidate label
     const demGroup = labelGroup.append("g").attr("transform", `translate(80, 0)`);
@@ -131,6 +131,10 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     .on("mouseout", () => {
     tooltip.style("visibility", "hidden");
     });
+
+    function calculateStateCode(d) {
+      return fipsToState[d.id.toString().padStart(2, "0")];
+    }
   
     d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json").then(us => {
       const states = topojson.feature(us, us.objects.states).features;
@@ -138,46 +142,60 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
       const path = d3.geoPath().projection(projection);
   
       // Draw states
-      svg.selectAll("path")
+      svg.selectAll("path.state")
         .data(states)
         .join("path")
+        .attr("class", "state")
         .attr("d", path)
+        .attr("id", d => `state-${fipsToState[d.id.toString().padStart(2, "0")]}`)
         .attr("fill", d => {
-          const fips = d.id.toString().padStart(2, "0");
-          const stateCode = fipsToState[fips];
-          const voteData = votes[stateCode];
-          if (!voteData) return "#ccc";
-          // const margin = parseFloat(voteData["D Vote Percentage"]) - parseFloat(voteData["R Vote Percentage"]);
-          return colorScale(parseFloat(voteData["diff_percent"]));
+          const fips = d.id.toString().padStart(2, "0"),
+                code = fipsToState[fips],
+                vd = votes[code];
+          return vd ? colorScale(parseFloat(vd.diff_percent)) : "#ccc";
         })
         .attr("stroke", "#fff")
         .attr("stroke-width", 1)
         .attr("cursor", "pointer")
-        .on("mouseover", function () {
-          d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+        .on("mouseover", function(event, d) {
+          if (!d3.select(this).classed("selected")) {
+            d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+            const code = fipsToState[d.id.toString().padStart(2, "0")];
+            d3.select(`#sidebar-${code}`)
+              .attr("stroke", "#000")
+              .attr("stroke-width", 3);
+          }
         })
-        .on("mouseout", function () {
-          d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1);
+        .on("mouseout", function(event, d) {
+          if (!d3.select(this).classed("selected")) {
+            d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1);
+            const code = fipsToState[d.id.toString().padStart(2, "0")];
+            d3.select(`#sidebar-${code}`)
+              .attr("stroke", "#fff")
+              .attr("stroke-width", 1);
+          }
         })
-        .on("click", function (event, d) {
-            const fips = d.id.toString().padStart(2, "0");
-            const stateCode = fipsToState[fips];
-          
-            const isSelected = d3.select(this).classed("selected");
-          
-            d3.selectAll("path").classed("selected", false); // Deselect all
-          
-            if (!isSelected) {
-              // If it was not selected, now we're selecting it
-              d3.select(this).classed("selected", true);
+        .on("click", function(event, d) {
+          const fips = d.id.toString().padStart(2, "0"),
+                code = fipsToState[fips],
+                me = d3.select(this),
+                was = me.classed("selected");
 
-              drawVotesBarChart(votes, codeToState, stateCode, demPartyCandidate, repPartyCandidate);
-            } else {
-              // It was selected, now we're deselecting it
-              resetPlots();
-            }
-          })             
-        .attr("id", d => `state-${fipsToState[d.id.toString().padStart(2, "0")]}`);
+          // clear all selection
+          svg.selectAll("path.state").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
+          d3.selectAll("rect.sidebar-rect").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
+
+          if (!was) {
+            me.classed("selected", true).attr("stroke", "#000").attr("stroke-width", 4);
+            d3.select(`#sidebar-${code}`)
+              .classed("selected", true)
+              .attr("stroke", "#000")
+              .attr("stroke-width", 4);
+            updatePlots(code);
+          } else {
+            resetPlots();
+          }
+        });
 
         // Add a dot for DC since it's hard to see
         const dcFeature = states.find(d => fipsToState[d.id.toString().padStart(2, "0")] === "DC");
@@ -196,30 +214,38 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
                 .attr("fill", color)
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 1.5)
-                .attr("id", "dc-circle")
                 .attr("cursor", "pointer")
-                .on("mouseover", () => {
-                    d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
+                .attr("id", "dc-circle")
+                .on("mouseover", function(event) {
+                  if (!d3.select(this).classed("selected")) {
+                    d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+                    d3.select(`#sidebar-DC`).attr("stroke", "#000").attr("stroke-width", 3);
+                  }
                 })
-                .on("mouseout", () => {
-                    if (!d3.select("#dc-circle").classed("selected")) {
-                    d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
-                    }
+                .on("mouseout", function() {
+                  if (!d3.select(this).classed("selected")) {
+                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
+                    d3.select(`#sidebar-DC`).attr("stroke", "#fff").attr("stroke-width", 1);
+                  }
                 })
-                .on("click", function () {
-                    const isSelected = d3.select(this).classed("selected");
+                .on("click", function() {
+                  const me = d3.select(this),
+                        was = me.classed("selected");
 
-                    d3.selectAll("path").classed("selected", false); // Deselect map states
-                    d3.select("#dc-circle").classed("selected", !isSelected);
+                  svg.selectAll("path.state").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
+                  d3.select("#dc-circle").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1.5);
+                  d3.selectAll("rect.sidebar-rect").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
 
-                    if (!isSelected) {
-                      d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
-                      drawVotesBarChart(votes, codeToState, "DC", demPartyCandidate, repPartyCandidate);
-                    } else {
-                      d3.select(this).attr("stroke", "#fff").attr("stroke-width", 1.5);
-                      resetPlots();
-                      // drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
-                    }
+                  if (!was) {
+                    me.classed("selected", true).attr("stroke", "#000").attr("stroke-width", 4);
+                    d3.select(`#sidebar-DC`)
+                      .classed("selected", true)
+                      .attr("stroke", "#000")
+                      .attr("stroke-width", 4);
+                    updatePlots("DC");
+                  } else {
+                    resetPlots();
+                  }
                 });
         }
 
@@ -287,54 +313,72 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
   
         // Background rectangle
         sidebar.append("rect")
-        .attr("x", 35)
-        .attr("y", y - 14)
-        .attr("width", 40)
-        .attr("height", height/20)
-        .attr("rx", 4)
-        .attr("fill", fillColor)
-        .attr("cursor", "pointer")
-        .attr("id", `sidebar-${code}`) // add id for later reference
-        .classed("selected", false)
-        .on("mouseover", () => {
-            d3.select(`#state-${code}`).attr("stroke", "#000").attr("stroke-width", 3);
-            if (code === "DC") {
+          .attr("class", "sidebar-rect")
+          .attr("id", `sidebar-${code}`)
+          .attr("x", 55)
+          .attr("y", y-34)
+          .attr("width", 40)
+          .attr("height", height/20)
+          .attr("rx", 4)
+          .attr("fill", fillColor)
+          .attr("stroke", "#fff")           // initial border
+          .attr("stroke-width", 1)         // initial border width
+          .attr("cursor", "pointer")
+          .on("mouseover", () => {
+            if (!d3.select(`#sidebar-${code}`).classed("selected")) {
+              d3.select(`#sidebar-${code}`).attr("stroke", "#000").attr("stroke-width", 3);
+              d3.select(`#state-${code}`)
+                .attr("stroke", "#000")
+                .attr("stroke-width", 3);
+              if (code === "DC") {
                 d3.select("#dc-circle").attr("stroke", "#000").attr("stroke-width", 3);
+              }
             }
-        })
-        .on("mouseout", () => {
-            const isSelected = d3.select(`#sidebar-${code}`).classed("selected");
-            if (!isSelected) {
-            d3.select(`#state-${code}`).attr("stroke", "#fff").attr("stroke-width", 1);
-            if (code === "DC") {
+          })
+          .on("mouseout", () => {
+            if (!d3.select(`#sidebar-${code}`).classed("selected")) {
+              d3.select(`#sidebar-${code}`).attr("stroke", "#fff").attr("stroke-width", 1);
+              d3.select(`#state-${code}`)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+              if (code === "DC") {
                 d3.select("#dc-circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+              }
             }
-            }
-        })
-        .on("click", function () {
-            const isSelected = d3.select(this).classed("selected");
+          })
+          .on("click", function() {
+            const me = d3.select(this),
+                  was = me.classed("selected");
 
-            // Deselect all other elements (states, circles, and sidebar)
-            d3.selectAll("path").classed("selected", false);
-            d3.selectAll("#dc-circle").classed("selected", false);
-            d3.selectAll("rect").classed("selected", false);
+            // deselect map + sidebar
+            svg.selectAll("path.state").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
+            d3.select("#dc-circle").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1.5);
+            d3.selectAll("rect.sidebar-rect").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
 
-            // Toggle current one
-            d3.select(this).classed("selected", !isSelected);
+            if (!was) {
+              me.classed("selected", true).attr("stroke", "#000").attr("stroke-width", 4);
+              d3.select(`#state-${code}`)
+                .attr("stroke", "#000")
+                .classed("selected", true)
+                .attr("stroke-width", 4);
 
-            if (!isSelected) {
-              drawVotesBarChart(votes, codeToState, code, demPartyCandidate, repPartyCandidate);
+              if (code === "DC") {
+                d3.select("#dc-circle")
+                  .classed("selected", true)
+                  .attr("stroke", "#000")
+                  .attr("stroke-width", 4);
+              }
+              updatePlots(code);
             } else {
               resetPlots();
-              // drawVotesBarChart(votes, codeToState, "US", demPartyCandidate, repPartyCandidate);
             }
-        });          
+          });
   
         // State label
         sidebar.append("text")
           .text(`${code}`)
-          .attr("x", 55)
-          .attr("y", y - 2)
+          .attr("x", 75)
+          .attr("y", y - 22)
           .attr("text-anchor", "middle")
           .attr("font-weight", "bold")
           .attr("font-size", "12px")
@@ -344,8 +388,8 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
         // Electoral votes
         sidebar.append("text")
           .text(electoralVotes)
-          .attr("x", 55)
-          .attr("y", y + 10)
+          .attr("x", 75)
+          .attr("y", y-10)
           .attr("text-anchor", "middle")
           .attr("font-size", "12px")
           .attr("font-weight", "bold")
@@ -353,8 +397,35 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
           .attr("pointer-events", "none");
       });
     });
+
+    svg.append("text")
+      .attr("x", 80 + (width/2))
+      .attr("y", 0)
+      .attr("text-anchor","middle")
+      .style("font-size","20px").style("font-weight","bold")
+      .text("U.S. 2024 Presidential Election Results");
   
     console.log("Finished drawing map");
+}
+
+function updatePlots(stateCode){
+  // if(!barSelected) {
+  //   drawEvBarChart(data.presidentResults.stateLevel, data.demPartyCandidate, data.repPartyCandidate, stateCode);
+  //   barSelected = true;
+  // }
+  drawEvBarChart(data.presidentResults.stateLevel, data.demPartyCandidate, data.repPartyCandidate, stateCode);
+  drawVotesBarChart(data.presidentResults.stateLevel.votes, data.codeToState, data.demPartyCandidate, data.repPartyCandidate, stateCode);
+  drawTurnoutPlot(data.turnout.stateLevel.details, data.houseResults.votes, data.senateResults.votes, data.presidentResults.stateLevel.votes, stateCode);
+  drawSplitVotingPlot(data.presidentResults.cdLevel.votes, data.presidentResults.stateLevel.votes, data.houseResults.votes, data.senateResults.votes, stateCode)
+
+  pcpStateCode = stateCode;
+  document.getElementById("raceToggleBtn").innerText = showRaceDetails ? "General Details" : "Race Details";
+  // showRaceDetails = false;
+  drawPcpPlot(showRaceDetails ? data.countyRaceDetails : data.countyDetails, showRaceDetails ? pcpRaceFeatures : pcpGeneralFeatures, showRaceDetails, stateCode)
+
+  counter = 0;
+  d3.selectAll(".point").classed("selected", false).attr("stroke-width", 1).attr("stroke", "rgb(136,136,136)");
+  d3.selectAll("text[id^='label-']").remove();
 }
 
 function drawCountyLevel(){

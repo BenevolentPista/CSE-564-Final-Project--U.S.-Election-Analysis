@@ -135,7 +135,7 @@ def index():
     # Part-7: County details
     df2024_county_details = pd.read_csv('FinalDatasets/2024-county-details-final.csv')
 
-    pcp_columns = ['state_name', 'state_code', 'county_name', 'population', 'turnout', 'per_point_diff', 'poverty_percent', 'college_educated_percent', 'households_total', 'households_median_income']
+    pcp_columns = ['state_name', 'state_code', 'county_name', 'population', 'turnout_percent', 'diff_percent', 'poverty_percent', 'college_educated_percent', 'households_total', 'households_median_income']
     df2024_county_details = df2024_county_details[pcp_columns]
     df2024_county_details_dict = {
         state: (
@@ -158,6 +158,26 @@ def index():
     # Part-9: Load state details
     df2024_state_details = pd.read_csv('FinalDatasets/2024-state-details-final.csv')
     df2024_state_details_dict = df2024_state_details.set_index('state_code').to_dict(orient='index')
+
+    # Part-10: Load race details
+    df2024_county_race_details = pd.read_csv('FinalDatasets/2024-county-race-details-final.csv')
+
+    # Race columns
+    # raceCountyPcpColumns = ['state_name', 'state_code', 'county_name', 'white_percent', 'black_percent', 'native_percent', 'asian_percent', 'pacific_percent', 'hispanic_percent', 'other_percent']
+    # df2024_county_race_details = df2024_county_race_details[raceCountyPcpColumns]
+    # raceStatePcpColumns = ['state_name', 'state_code', 'white_percent', 'black_percent', 'native_percent', 'asian_percent', 'pacific_percent', 'hispanic_percent', 'other_percent']
+    # df2024_state_race_details = df2024_state_details[raceStatePcpColumns]
+
+    # Covert to dict
+    df2024_county_race_details_dict = {
+        state: (
+            group
+            .drop(columns=['state_code'])
+            .set_index('county_name')
+            .to_dict(orient='index')
+        )
+        for state, group in df2024_county_race_details.groupby('state_code')
+    }
 
     data = {
         'demPartyCandidate': d_party_candidate,
@@ -191,7 +211,8 @@ def index():
             }
         },
         'countyDetails': df2024_county_details_dict,
-        'stateDetails': df2024_state_details_dict
+        'stateDetails': df2024_state_details_dict,
+        'countyRaceDetails': df2024_county_race_details_dict,
     }
 
     return render_template('index.html', data=data)

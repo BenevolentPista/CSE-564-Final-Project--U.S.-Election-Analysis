@@ -52,6 +52,21 @@
       display: flex;
       height: 40%;
       overflow: hidden;
+      flex-direction: column;
+    }
+
+    .row-45 {
+      display: flex;
+      height: 45%;
+      overflow: hidden;
+      /* flex-direction: column; */
+    }
+
+    .row-47-5 {
+      display: flex;
+      height: 47.5%;
+      overflow: hidden;
+      /* flex-direction: column; */
     }
 
     .row-50 {
@@ -64,6 +79,20 @@
       display: flex;
       justify-content: center; 
       height: 60%;
+      overflow: hidden;
+    }
+
+    .row-10 {
+      display: flex;
+      justify-content: center; 
+      height: 10%;
+      overflow: hidden;
+    }
+
+    .row-5 {
+      display: flex;
+      justify-content: center; 
+      height: 5%;
       overflow: hidden;
     }
 
@@ -120,10 +149,10 @@
       stroke-width: 1.5px;
     }
 
-    .selected {
+    /* .selected {
       stroke: #000;
       stroke-width: 4px;
-    }
+    } */
 
     .line:hover {
       stroke-width: 3px;
@@ -142,16 +171,12 @@
           <div id="geoMapUSA"></div>
         </div>
         <div class="row-40">
-          <div class="section column-50">
-            <div id="evBarPlot"></div>
-          </div>
-          <div class="section column-50">
-            <div id="voteCounts"></div>
-          </div>
+            <div class="section"><div id="evBarPlot"></div></div>
+            <div class="section"><div id="voteCounts"></div></div>
         </div>
       </div>
       <div class="custom-column column-50">
-        <div class="row-50">
+        <div class="row-47-5">
           <div class="section column-50">
             <div id="turnoutPlot"></div>
           </div>
@@ -159,10 +184,17 @@
             <div id="splitVotingPlot" style="height:100%; width:100%"></div>
           </div>
         </div>
-        <div class="row-50">
-          <div class="section">
-            <div id="pcpPlot"></div>
-          </div>
+        <div class="row-5">
+          <div id="legends"></div>
+        </div>
+        <div class="row-47-5">
+          <div class="section" style="position: relative;">
+          <div id="pcpPlot"></div>
+          <button id="raceToggleBtn" class="btn btn-outline-primary btn-sm"
+                  style="position: absolute; top: 10px; right: 10px;">
+            Race Details
+          </button>
+        </div>
         </div>
       </div>
     </div>
@@ -197,19 +229,97 @@
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("visibility", "hidden");
+    
+    var counter = 0;
+    var barSelected = false;
+    let showRaceDetails = false;
+    var pcpGeneralFeatures = ['population', 'turnout_percent', 'diff_percent', 'households_median_income', 'college_educated_percent', 'poverty_percent'];
+    var pcpRaceFeatures = ['population', 'turnout_percent', 'diff_percent', 'white_percent', 'black_percent', 'asian_percent', 'hispanic_percent', 'native_percent', 'pacific_percent', 'other_percent'];
+    var pcpStateCode = null;
 
     function resetPlots(){
       drawUsaMap(data.presidentResults.stateLevel.votes, data.codeToState, fipsToState, data.demPartyCandidate, data.repPartyCandidate);
       drawEvBarChart(data.presidentResults.stateLevel, data.demPartyCandidate, data.repPartyCandidate);
-      drawVotesBarChart(data.presidentResults.stateLevel.votes, data.codeToState, "US", data.demPartyCandidate, data.repPartyCandidate);
+      drawVotesBarChart(data.presidentResults.stateLevel.votes, data.codeToState, data.demPartyCandidate, data.repPartyCandidate, "US");
       drawTurnoutPlot(data.turnout.stateLevel.details, data.houseResults.votes, data.senateResults.votes, data.presidentResults.stateLevel.votes);
       drawSplitVotingPlot(data.presidentResults.cdLevel.votes, data.presidentResults.stateLevel.votes, data.houseResults.votes, data.senateResults.votes)
-      var pcpFeatures = ['population', 'turnout', 'diff_percent', 'households_total', 'households_median_income', 'college_educated_percent', 'poverty_percent']
-      console.log("Drawing PCP plot");
-      drawPcpPlot(data.stateDetails, pcpFeatures, true)
+      
+      // Set back to default PCP
+      showRaceDetails = false;
+      pcpStateCode = null; // Show state level
+      document.getElementById("raceToggleBtn").innerText = showRaceDetails ? "General Details" : "Race Details"; // Set the box to show be on general details
+      drawPcpPlot(data.stateDetails, pcpGeneralFeatures, showRaceDetails, pcpStateCode)
+
+      counter = 0;
+      d3.selectAll(".point").classed("selected", false).attr("stroke-width", 1).attr("stroke", "rgb(136,136,136)");
+      d3.selectAll("text[id^='label-']").remove();
     }
 
+    document.getElementById("raceToggleBtn").addEventListener("click", () => {
+      showRaceDetails = !showRaceDetails;
+      document.getElementById("raceToggleBtn").innerText = showRaceDetails ? "General Details" : "Race Details";
+
+      drawPcpPlot((pcpStateCode === null) ? data.stateDetails : showRaceDetails ? data.countyRaceDetails : data.countyDetails, showRaceDetails ? pcpRaceFeatures : pcpGeneralFeatures, showRaceDetails, pcpStateCode);
+    });
+
     resetPlots();
+
+    function drawLegends() {
+      const legends = [
+        { label: "Congressional District Election", symbol: d3.symbolSquare, size: 120 },
+        { label: "Presidental Election: State Level", symbol: d3.symbolCircle, size: 120 },
+        { label: "Presidental Election: National Level", symbol: d3.symbolStar, size: 200 },
+        { label: "Senate Election", symbol: d3.symbolTriangle, size: 120 }
+      ];
+
+      const legendWidth = 800;
+      const legendHeight = 50;
+      const spacing = 180; // fixed spacing to move legends to left
+
+      const svg = d3.select("#legends")
+        .append("svg")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("display", "block")
+        .style("margin-left", "20px");  // move to left
+
+      const legendGroup = svg.selectAll("g")
+        .data(legends)
+        .enter()
+        .append("g")
+        .attr("transform", (d, i) => `translate(${i * spacing + 10}, ${legendHeight / 2 - 10})`);
+
+      // Add shape
+      legendGroup.append("path")
+        .attr("d", d => d3.symbol().type(d.symbol).size(d.size)())
+        .attr("fill", "#333")
+        .attr("transform", "translate(0, 0)");
+
+      // Add wrapped label (2 words per line)
+      legendGroup.append("text")
+        .attr("x", 15)
+        .attr("y", -10)
+        .each(function(d) {
+          const words = d.label.split(" ");
+          const lines = [];
+          for (let i = 0; i < words.length; i += 2) {
+            lines.push(words.slice(i, i + 2).join(" "));
+          }
+
+          const textEl = d3.select(this);
+          lines.forEach((line, i) => {
+            textEl.append("tspan")
+              .attr("x", 10)
+              .attr("dy", i === 0 ? "1em" : "1.2em")
+              .text(line);
+          });
+        })
+        .style("font-size", "13px")
+        .style("font-family", "sans-serif");
+    }
+
+    // Call it after everything is set
+    drawLegends();
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

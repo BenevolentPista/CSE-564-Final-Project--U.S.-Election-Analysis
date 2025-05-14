@@ -1,43 +1,47 @@
-function drawPcpPlot(details, pcpFeatures, isState) {
-    const data = [];
-    if (isState){
+function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
+    const dataLines = [];
+    if (stateCode === null){
         for (const [stateCode, values] of Object.entries(details)) {
             if(stateCode === "US"){
                 continue;
             }
 
             const rec = { id: `${stateCode} (${stateCode})` };
-
             pcpFeatures.forEach(d => {
                 if(values.hasOwnProperty(d)){
                     rec[d] = values[d];
                 }
             })
 
-            data.push(rec);
+            dataLines.push(rec);
         }
     }
     else{
-        for (const [stateCode, regions] of Object.entries(details)) {
-            for (const [regionName, values] of Object.entries(regions)) {
-                data.push({ id: `${regionName} (${stateCode})`, ...values });
-            }
+        for (const [county, values] of Object.entries(details[stateCode])) {
+            const rec = { id: `${county}-(${stateCode})` };
+            pcpFeatures.forEach(d => {
+                if(values.hasOwnProperty(d)){
+                    rec[d] = values[d];
+                }
+            })
+
+            dataLines.push(rec);
         }
     }
 
-    if (!data.length) return;
+    console.log(`stateCode = ${stateCode}`);
+    console.log(dataLines)
+    if (!dataLines.length) return;
 
-    // 1) Numeric dimensions
-    const dimensions = Object.keys(data[0])
-    .filter(k => k !== "id" && typeof data[0][k] === "number");
+    const dimensions = Object.keys(dataLines[0])
+    .filter(k => k !== "id" && typeof dataLines[0][k] === "number");
 
-    // 2) Order of axes
-    const featuresOrdered = dimensions;
+    let featuresOrdered = dimensions;
+    console.log(`FeaturesOrdered = ${featuresOrdered}`)
 
-    // 3) Canvas
-    const margin = { top: 70, right: 20, bottom: 10, left: 20 };
+    const margin = { top: 80, right: 20, bottom: 10, left: 20 };
     const width  = 960 - margin.left - margin.right;
-    const height = 420 - margin.top  - margin.bottom;
+    const height = 400 - margin.top  - margin.bottom;
 
     d3.select("#pcpPlot").selectAll("*").remove();
     const svg = d3.select("#pcpPlot")
@@ -47,28 +51,28 @@ function drawPcpPlot(details, pcpFeatures, isState) {
     .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 4) Y-scales: special case per_point_diff → absolute
     const y = {};
     dimensions.forEach(dim => {
-    if (dim === "diff_percent") {
-        // only positive domain [0 .. max|diff|]
-        y[dim] = d3.scaleLinear()
-        .domain([0, d3.max(data, d => Math.abs(d[dim]))]).nice()
-        .range([height, 0]);
-    } else {
-        y[dim] = d3.scaleLinear()
-        .domain(d3.extent(data, d => d[dim])).nice()
-        .range([height, 0]);
-    }
+        if (dim === "diff_percent") {
+            y[dim] = d3.scaleLinear()
+            .domain([0, d3.max(dataLines, d => Math.abs(d[dim]))]).nice()
+            .range([height, 0]);
+        } else if (dim.includes("percent")) {
+            y[dim] = d3.scaleLinear()
+            .domain([0, 100])
+            .range([height, 0]);
+        } else {
+            y[dim] = d3.scaleLinear()
+            .domain(d3.extent(dataLines, d => d[dim])).nice()
+            .range([height, 0]);
+        }
     });
 
-    // 5) X-scale
     const x = d3.scalePoint()
     .domain(featuresOrdered)
     .range([0, width])
     .padding(0.5);
 
-    // 6) Line generator with abs() on per_point_diff
     const line = d3.line();
     function path(d) {
     return line(
@@ -80,9 +84,8 @@ function drawPcpPlot(details, pcpFeatures, isState) {
     );
     }
 
-    // 7) Background lines (light grey)
     svg.selectAll("path.background")
-    .data(data)
+    .data(dataLines)
     .enter().append("path")
         .attr("class","background")
         .attr("d", path)
@@ -90,73 +93,185 @@ function drawPcpPlot(details, pcpFeatures, isState) {
         .attr("stroke","#eee")
         .attr("stroke-width",1);
 
-    // 8) Foreground lines, colored by diff_percent sign
-    svg.selectAll("path.foreground")
-    .data(data)
-    .enter().append("path")
-        .attr("class","foreground")
-        .attr("d", path)
-        .attr("fill","none")
-        .attr("stroke", d => d.diff_percent < 0 ? "rgb(28, 64, 140)" : "rgb(191,29,41)")
-        .attr("stroke-width",1)
-        .attr("stroke-opacity",0.7)
-    .append("title")
-        .text(d => `${d.id}\n` +
-        featuresOrdered.map(dim => {
-            const v = (dim === "diff_percent" ? Math.abs(d[dim]) : d[dim]).toFixed(2);
-            return `${dim}: ${v}`;
-        }).join("\n")
-        );
-
-    // 9) Axes per dimension
-    const axis = d3.axisLeft().ticks(5);
-    const g = svg.selectAll(".dimension")
-    .data(featuresOrdered)
+    const fgLines = svg.selectAll("g.fg-line")
+    .data(dataLines)
     .enter().append("g")
-        .attr("class","dimension")
-        .attr("transform", dim => `translate(${x(dim)},0)`);
+    .attr("class", "fg-line");
 
-    // Draw axis
-    g.append("g")
-    .each(function(dim) { d3.select(this).call(axis.scale(y[dim])); })
-    .selectAll("text")
-        .style("font-size","9px");
+    fgLines.append("path")
+    .attr("class","foreground")
+    .attr("d", path)
+    .attr("fill","none")
+    .attr("stroke", d => d.diff_percent < 0 ? "rgb(28, 64, 140)" : "rgb(191,29,41)")
+    .attr("stroke-width",1)
+    .attr("stroke-opacity",0.7)
+    .classed("selected", false);
 
-    // Dimension label
-    const dimMap = {'population':'Total Population', 'turnout':'Turnout', 'diff_percent':'Margin of Victory', 'households_total':'Total Households', 'households_median_income':'Median Household Income', 'college_educated_percent':'Percentage College Educated', 'poverty_percent':'Percentage in Poverty'}
+    fgLines.append("path")
+    .attr("class", "hover-path")
+    .attr("d", path)
+    .attr("fill", "none")
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 10)
+    .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+        svg.append("text")
+        .attr("id", "hover-label")
+        .attr("x", event.offsetX - margin.left + 10)
+        .attr("y", event.offsetY - margin.top - 10)
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black")
+        .text(d.id);
+    })
+    .on("mousemove", function(event) {
+        svg.select("#hover-label")
+        .attr("x", event.offsetX - margin.left + 10)
+        .attr("y", event.offsetY - margin.top - 10);
+    })
+    .on("mouseout", function() {
+        svg.select("#hover-label").remove();
+    })
+    .on("click", function(event, d) {
+        const group = d3.select(this.parentNode);
+        const isSelected = group.classed("selected");
+        group.classed("selected", !isSelected);
 
-    // Dimension label with 2-word wrapping
-    g.append("text")
-    .attr("y", -20)
-    .attr("text-anchor", "middle")
-    .style("font-size", "11px")
-    .each(function(dim) {
-        const label = dimMap[dim] || dim;
-        const words = label.split(" ");
-        // group into lines of 2 words each
-        const lines = [];
-        for (let i = 0; i < words.length; i += 2) {
-        lines.push(words.slice(i, i + 2).join(" "));
-        }
-
-        // clear any existing text
-        const t = d3.select(this).text("");
-
-        // one tspan per 2-word line
-        lines.forEach((line, i) => {
-        t.append("tspan")
-            .attr("x", 0)
-            .attr("dy", i === 0 ? "0em" : "1.2em")
-            .text(line);
-        });
+        group.select(".foreground")
+            .attr("stroke-width", isSelected ? 1 : 3)
+            .attr("stroke", isSelected ? (d.diff_percent < 0 ? "rgb(28, 64, 140)" : "rgb(191,29,41)") : "black")
+            .attr("stroke-opacity", isSelected ? 0.7 : 1);
     });
 
-    // 10) Title
+    const drag = d3.drag()
+        .on("start", function(event, d) {
+            d3.select(this).raise().classed("active", true);
+        })
+        .on("drag", function(event, d) {
+            d3.select(this).attr("transform", `translate(${event.x}, 0)`);
+        })
+        .on("end", function(event, d) {
+            d3.select(this).classed("active", false);
+            let positions = [];
+            svg.selectAll(".dimension").each(function(dim) {
+                var xVal = extractDimensionX(this)
+                positions.push({
+                    key: dim,
+                    x: xVal
+                });
+            });
+            positions.sort((a, b) => a.x - b.x);
+            featuresOrdered = positions.map(d => d.key);
+            x.domain(featuresOrdered);
+            updateAxes(svg, x);
+            redrawLines(svg, featuresOrdered, x, y);
+            pcpFeatures.length = 0;
+            featuresOrdered.forEach(f => pcpFeatures.push(f));
+        });
+
+    const axis = d3.axisLeft().ticks(5);
+    const g = 
+    svg.selectAll(".dimension")
+        .data(featuresOrdered)
+        .enter()
+        .append("g")
+        .attr("class","dimension")
+        .attr("transform", dim => `translate(${x(dim)},0)`)
+        .style("cursor", "pointer") 
+        .call(drag);
+
+    g.append("g")
+    .each(function(dim) {
+        const axisGen = d3.axisLeft(y[dim]).ticks(5);
+        if (dim.includes("percent")) {
+        axisGen.tickFormat(d => `${d}%`);
+        }
+        d3.select(this).call(axisGen);
+    })
+    .selectAll("text")
+        .style("font-size", "12px");
+
+    const dimMap = {'population':'Total Population', 'households_total':'Total Households', 'turnout_percent':'Turnout Rate', 'diff_percent':'Margin of Victory', 'households_median_income':'Median Household Income',
+        'college_educated_percent':'Percentage College Educated', 'poverty_percent':'Percentage in Poverty', 'white_percent':'White Percentage', 'black_percent':'Black Percentage',
+        'native_percent':'Native American Percentage', 'pacific_percent':'Pacific Islander Percentage', 'asian_percent':'Asian Percentage', 'other_percent':'Other Race Percentage',
+        'hispanic_percent':'Hispanic Percentage'}
+
+    g.append("text")
+        .attr("y", -20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "11px")
+        .each(function(dim) {
+            const label = dimMap[dim] || dim;
+            const words = label.split(" ");
+            const wrapOneWord = showRace && (dim.includes("asian") || dim.includes("hispanic"));
+            const lines = [];
+            if (wrapOneWord) {
+                for (let i = 0; i < words.length; i++) {
+                    lines.push(words[i]);
+                }
+            } else {
+                for (let i = 0; i < words.length; i += 2) {
+                    lines.push(words.slice(i, i + 2).join(" "));
+                }
+            }
+            const t = d3.select(this).text("");
+            lines.forEach((line, i) => {
+                t.append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", i === 0 ? "0em" : "1.2em")
+                    .text(line);
+            });
+        });
+
+    var title = "Characteristics of All States";
+    if (stateCode !== null){
+        title = `Characteristics of Counties in ${data.codeToState[stateCode]} (${stateCode})`
+    }
+
     svg.append("text")
         .attr("x", width/2)
-        .attr("y", -40)
+        .attr("y", -50)
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
         .style("font-weight", "bold")
-        .text("Characteristics of All States");
+        .text(title);
+}
+
+function updateAxes(svg, x) {
+    svg.selectAll(".dimension")
+        .transition().duration(500)
+        .attr("transform", d => `translate(${x(d)}, 0)`);
+}
+
+function redrawLines(svg, featuresOrdered, x, y) {
+    const line = d3.line();
+    svg.selectAll("path.foreground")
+        .transition().duration(500)
+        .attr("d", d => line(
+            featuresOrdered.map(dim => {
+                const val = dim === "diff_percent" ? Math.abs(d[dim]) : d[dim];
+                return [x(dim), y[dim](val)];
+            })
+        ));
+    svg.selectAll("path.background")
+        .transition().duration(500)
+        .attr("d", d => line(
+            featuresOrdered.map(dim => {
+                const val = dim === "diff_percent" ? Math.abs(d[dim]) : d[dim];
+                return [x(dim), y[dim](val)];
+            })
+        ));
+    svg.selectAll("path.hover-path")
+        .transition().duration(500)
+        .attr("d", d => line(
+            featuresOrdered.map(dim => {
+                const val = dim === "diff_percent" ? Math.abs(d[dim]) : d[dim];
+                return [x(dim), y[dim](val)];
+            })
+        ));
+}
+
+function extractDimensionX(d){
+    const transformAttr = d3.select(d).attr("transform");
+    return transformAttr ? parseFloat(transformAttr.match(/translate\(([^,]+)/)[1]) : 0;
 }
