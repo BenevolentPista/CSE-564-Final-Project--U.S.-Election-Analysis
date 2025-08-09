@@ -69,8 +69,8 @@ function drawVotesBarChart(votes, codeToState, demPartyCandidate, repPartyCandid
     .text(d => `${d.value.toFixed(1)}%`);
 
   const title = stateCode === "US"
-    ? "Vote Percentage in the U.S"
-    : `Vote Percentages in ${codeToState[stateCode]}`;
+    ? "Popular Vote in the U.S"
+    : `Popular Vote in ${codeToState[stateCode]}`;
 
   svg.append("text")
     .attr("x", width / 2)
@@ -235,5 +235,5 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, 
       .attr("x", width/2).attr("y", -10)
       .attr("text-anchor","middle")
       .style("font-size","16px").style("font-weight","bold")
-      .text("Electoral vote distribution");
+      .text("Electoral Vote Distribution");
 }
