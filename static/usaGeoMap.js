@@ -1,12 +1,14 @@
+// Function that draws a map of the U.S.
 function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repPartyCandidate) {
-    console.log("Data test");
+    console.log("Data = ");
     console.log(data)
     console.log("votes = ")
     console.log(votes)
+
     const smallStates = ["VT", "NH", "MA", "CT", "RI", "NJ", "DE", "MD", "DC", "HI"];
-    const scale = 100
     const width = 960, height = 600;
 
+    // Colors for the margins of victory
     const colorScale = (margin) => {
       const absMargin = Math.abs(margin);
       const isDem = margin < 0;
@@ -16,6 +18,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
       return isDem ? "rgb(28, 64, 140)" : "rgb(191, 29, 41)";
     };
   
+    // Setting the size of the map
     const svg = d3.select("#geoMapUSA")
       .append("svg")
       .attr("viewBox", `50 -17 ${width} ${height}`)
@@ -33,12 +36,14 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     // Democratic candidate label
     const demGroup = labelGroup.append("g").attr("transform", `translate(80, 0)`);
 
+    // Rectangular panel for Democratic candidate
     demGroup.append("rect")
     .attr("width", 180)
     .attr("height", 30)
     .attr("fill", "rgb(28, 64, 140)")
     .attr("rx", 6);
 
+    // Text for Democratic candidate
     demGroup.append("text")
     .text(`${demPartyCandidate} 226`)
     .attr("x", 90)
@@ -56,6 +61,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     "rgb(148, 155, 179)"  // Tilt
     ];
 
+    // Democratic Candidate: Options for hovering over each color
     demGroup.selectAll("rect.color")
     .data(demColors)
     .enter()
@@ -84,12 +90,14 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     // Republican candidate label
     const repGroup = labelGroup.append("g").attr("transform", `translate(300, 0)`);
 
+    // Rectangular panel for Republican candidate
     repGroup.append("rect")
     .attr("width", 180)
     .attr("height", 30)
     .attr("fill", "rgb(191, 29, 41)")
     .attr("rx", 6);
 
+    // Text for Republican candidate
     repGroup.append("text")
     .text(`${repPartyCandidate} 312`)
     .attr("x", 90)
@@ -107,6 +115,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
     "rgb(207, 137, 128)"  // Tilt
     ];
 
+    // Republican Candidate: Options for hovering over each color
     repGroup.selectAll("rect.color")
     .data(repColors)
     .enter()
@@ -136,6 +145,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
       return fipsToState[d.id.toString().padStart(2, "0")];
     }
   
+    // Draw the map
     d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json").then(us => {
       const states = topojson.feature(us, us.objects.states).features;
       const projection = d3.geoAlbersUsa().fitSize([width, height], { type: "FeatureCollection", features: states });
@@ -154,7 +164,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
                 vd = votes[code];
           return vd ? colorScale(parseFloat(vd.diff_percent)) : "#ccc";
         })
-        .attr("stroke", "#fff")
+        .attr("stroke", "#fff") // White border for each state
         .attr("stroke-width", 1)
         .attr("cursor", "pointer")
         .on("mouseover", function(event, d) {
@@ -177,22 +187,28 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
         })
         .on("click", function(event, d) {
           const fips = d.id.toString().padStart(2, "0"),
-                code = fipsToState[fips],
-                me = d3.select(this),
-                was = me.classed("selected");
+          code = fipsToState[fips],
+          me = d3.select(this),
+          was = me.classed("selected");
 
           // clear all selection
           svg.selectAll("path.state").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
           d3.selectAll("rect.sidebar-rect").classed("selected", false).attr("stroke", "#fff").attr("stroke-width", 1);
 
           if (!was) {
+            // Increase thickness of state border to indicate that it is selected
             me.classed("selected", true).attr("stroke", "#000").attr("stroke-width", 4);
+
+            // If small state, make sure sidebar representation is also selected
             d3.select(`#sidebar-${code}`)
               .classed("selected", true)
               .attr("stroke", "#000")
               .attr("stroke-width", 4);
+
+            // Update all plots for the level of the selected state
             updatePlots(code);
           } else {
+            // State deselected
             resetPlots();
           }
         });
@@ -264,6 +280,7 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
             const code = fipsToState[d.id.toString().padStart(2, "0")];
             let [x, y] = centroid;
             
+            // Adjustments for MI and FL since they don't fit in properly in the state
             if (code === "MI") {
                 x += 10;
                 y += 10;
@@ -284,8 +301,8 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
         .attr("font-weight", "bold")
         .attr("fill", "#fff")
         .attr("pointer-events", "none");
-  
-      // Add electoral vote count
+
+      // Add electoral vote count in each state
       largeStateGroups.append("text")
         .text(d => {
           const code = fipsToState[d.id.toString().padStart(2, "0")];
@@ -304,13 +321,14 @@ function drawUsaMap(votes, codeToState, fipsToState, demPartyCandidate, repParty
         .attr("class", "sidebar-labels")
         .attr("transform", `translate(${width - 100}, 50)`);
   
+      // Update sidebar for all small states to contain relevant details
       smallStates.forEach((code, i) => {
         const y = 200 + i * 35;
         const voteData = votes[code];
         const margin = parseFloat(voteData["diff_percent"]);
         const fillColor = colorScale(margin);
         const electoralVotes = voteData ? voteData["evs"] : "";
-  
+
         // Background rectangle
         sidebar.append("rect")
           .attr("class", "sidebar-rect")

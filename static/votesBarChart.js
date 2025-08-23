@@ -1,3 +1,4 @@
+// Draw horizontal bar chart for the votes won in each state
 function drawVotesBarChart(votes, codeToState, demPartyCandidate, repPartyCandidate, stateCode) {
   d3.select("#voteCounts").selectAll("*").remove();
 
@@ -81,11 +82,12 @@ function drawVotesBarChart(votes, codeToState, demPartyCandidate, repPartyCandid
     .text(title);
 }
 
+// Draw horizontal bar chart for EVs won by each candidate
 function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, stateCode = null) {
   const votesByState = dataPresidential.votes;
   const evsByState   = dataPresidential.evs;
 
-  // color scale
+  // color scale for margin of victory
   const colorScale = (margin) => {
     const absMargin = Math.abs(margin), isDem = margin < 0;
     if (absMargin < 1)  return isDem ? "rgb(148,155,179)" : "rgb(207,137,128)";
@@ -95,6 +97,7 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, 
   };
 
   // build demSegments & repSegments
+  // A segment contains - 1). State code, 2). The electoral votes won by the candidate, 3). The margin of victory in the state
   const demSegments = [], repSegments = [];
   Object.entries(votesByState).forEach(([state, v]) => {
     if (state === "US") return;
@@ -112,6 +115,7 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, 
     if (evsR > 0) repSegments.push({state, ev: evsR, diff_percent: mR});
   });
 
+  // Set the starting position of each segment. It is proportional to the EVs of each state
   demSegments.sort((a,b) => a.diff_percent - b.diff_percent);
   repSegments.sort((a,b) => b.diff_percent - a.diff_percent);
   let cum = 0;
@@ -155,6 +159,7 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, 
   svg.append("g")
     .call(d3.axisLeft(y));
 
+  // Draw segments for each state for each candidate
   function drawSegments(segments, name) {
     const y0 = y(name);
     svg.selectAll(`.seg-${name}`)
@@ -215,22 +220,26 @@ function drawEvBarChart(dataPresidential, demPartyCandidate, repPartyCandidate, 
   drawSegments(demSegments, demPartyCandidate);
   drawSegments(repSegments, repPartyCandidate);
 
+  // Line indicating the 270 mark to win an election
   svg.append("line")
     .attr("x1", x(270)).attr("y1", 0)
     .attr("x2", x(270)).attr("y2", height)
     .attr("stroke", "black")
     .attr("stroke-dasharray", "4 4");
 
+  // Text for EVs won by the Democratic candidate
   svg.append("text")
       .attr("x", x(totalDemEV)+5)
       .attr("y", y(demPartyCandidate) + barHeight/2 + 15)
       .text(totalDemEV).style("font-weight","bold");
 
+  // Text for EVs won by the Republican candidate
   svg.append("text")
       .attr("x", x(totalRepEV)+5)
       .attr("y", y(repPartyCandidate) + barHeight/2 + 15)
       .text(totalRepEV).style("font-weight","bold");
 
+  // Title of the EV bar chart
   svg.append("text")
       .attr("x", width/2).attr("y", -10)
       .attr("text-anchor","middle")

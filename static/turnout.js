@@ -1,3 +1,4 @@
+// Function that draws the turnout of a race against the margin of victory in that state
 function drawTurnoutPlot(turnoutPresident, dataHouse, dataSenate, dataPresidential, stateCode = null) {
   // 1) Build data array for all three races
   const points = [];
@@ -64,7 +65,7 @@ function drawTurnoutPlot(turnoutPresident, dataHouse, dataSenate, dataPresidenti
 
   console.log(points)
 
-  // 2) Color scale (unchanged)
+  // 2) Color scale
   const colorScale = margin => {
     const absM = Math.abs(margin), isDem = margin < 0;
     if (absM < 1)  return isDem ? "rgb(148,155,179)" : "rgb(207,137,128)";
@@ -153,11 +154,13 @@ function drawTurnoutPlot(turnoutPresident, dataHouse, dataSenate, dataPresidenti
       .attr("id", d => d.id)
       .attr("stroke-width", 1)
       .style("cursor", d => d.type === "president" ? "default" : "pointer")
+      // When hovering over a point, change the point border to green to indicate so
       .on("mouseover", function(event, d) {
         if (d.type === "president") return;
         d3.select(this).attr("stroke-width", 3);
         d3.select(this).attr("stroke", "rgb(8, 245, 0)");
       })
+      // Remove the color of highlight after hovering out of a point
       .on("mouseout", function(event, d) {
         if (d.id === "US-pres-turnout") return;
         if (!d3.select(this).classed("selected")) {
@@ -165,6 +168,7 @@ function drawTurnoutPlot(turnoutPresident, dataHouse, dataSenate, dataPresidenti
           d3.select(this).attr("stroke", "rgb(136,136,136)");
         }
       })
+      // Highlight the point if clicked on. Reset the color if it is clicked again
       .on("click", function(event, d) {
         if (d.id === "US-pres-turnout") return;
         const sel = d3.select(this);

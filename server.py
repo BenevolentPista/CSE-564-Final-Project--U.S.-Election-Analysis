@@ -42,14 +42,12 @@ def index():
     df2024_president_statelevel = pd.read_csv('FinalDatasets/2024-president-statelevel-results-final.csv')
     d_party_candidate = df2024_president_statelevel[dem_party_candidate].iloc[0]
     r_party_candidate = df2024_president_statelevel[rep_party_candidate].iloc[0]
-    # print(df2024_president_statelevel)
     
     # Select the numeric columns by excluding the non-numeric ones
     numeric_columns = df2024_president_statelevel.columns.difference(categorical_features)
 
     # Convert those numeric columns to float
     df2024_president_statelevel[numeric_columns] = df2024_president_statelevel[numeric_columns].apply(pd.to_numeric, errors='coerce')
-    # print(df2024_president_statelevel)
 
     # Extract relevant sub information
     state_to_code_dict = dict(zip(df2024_president_statelevel[state], df2024_president_statelevel[state_code]))
@@ -68,11 +66,9 @@ def index():
 
     # Convert those numeric columns to float
     df2024_president_countylevel_votes[numeric_columns] = df2024_president_countylevel_votes[numeric_columns].apply(pd.to_numeric, errors='coerce')
-    # print(df2024_president_countylevel_votes)
 
     # Extract county votes
     df2024_president_countylevel_votes = df2024_president_countylevel_votes[[state_code,  "county_name", "votes_gop", "votes_dem", "total_votes", "diff", "per_gop", "per_dem", "per_point_diff"]]
-    # president_county_votes_dict = df2024_president_countylevel_votes.set_index([state_code, 'county_name']).to_dict(orient='index')
 
     president_county_votes_dict = {
         state: (

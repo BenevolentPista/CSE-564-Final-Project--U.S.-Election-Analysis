@@ -1,7 +1,10 @@
+// Function for drawing parallel coordinates plot to compare counties
 function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
     const dataLines = [];
+    // Compare across all states if no state has been selected
     if (stateCode === null){
         for (const [stateCode, values] of Object.entries(details)) {
+            // To not compare the U.S against other states
             if(stateCode === "US"){
                 continue;
             }
@@ -16,6 +19,7 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
             dataLines.push(rec);
         }
     }
+    // Draw only for the counties in a selected state
     else{
         for (const [county, values] of Object.entries(details[stateCode])) {
             const rec = { id: `${county}-(${stateCode})` };
@@ -29,6 +33,7 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
         }
     }
 
+    // If no data found for PCP, return
     console.log(`stateCode = ${stateCode}`);
     console.log(dataLines)
     if (!dataLines.length) return;
@@ -52,6 +57,7 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const y = {};
+    // Draw the y-axis for each dimension
     dimensions.forEach(dim => {
         if (dim === "diff_percent") {
             y[dim] = d3.scaleLinear()
@@ -73,15 +79,16 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
     .range([0, width])
     .padding(0.5);
 
+    // Draw the lines
     const line = d3.line();
     function path(d) {
-    return line(
-        featuresOrdered.map(dim => {
-        const raw = d[dim];
-        const val = dim === "diff_percent" ? Math.abs(raw) : raw;
-        return [ x(dim), y[dim](val) ];
-        })
-    );
+        return line(
+            featuresOrdered.map(dim => {
+                const raw = d[dim];
+                const val = dim === "diff_percent" ? Math.abs(raw) : raw;
+                return [ x(dim), y[dim](val) ];
+            })
+        );
     }
 
     svg.selectAll("path.background")
@@ -93,6 +100,8 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
         .attr("stroke","#eee")
         .attr("stroke-width",1);
 
+    // Draw foreground lines
+    // These lines are the ones that can be selected
     const fgLines = svg.selectAll("g.fg-line")
     .data(dataLines)
     .enter().append("g")
@@ -143,6 +152,7 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
             .attr("stroke-opacity", isSelected ? 0.7 : 1);
     });
 
+    // Add drag functionality to each dimension
     const drag = d3.drag()
         .on("start", function(event, d) {
             d3.select(this).raise().classed("active", true);
@@ -196,6 +206,7 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
         'native_percent':'Native American Percentage', 'pacific_percent':'Pacific Islander Percentage', 'asian_percent':'Asian Percentage', 'other_percent':'Other Race Percentage',
         'hispanic_percent':'Hispanic Percentage'}
 
+    // Add text to each dimension
     g.append("text")
         .attr("y", -20)
         .attr("text-anchor", "middle")
@@ -237,12 +248,14 @@ function drawPcpPlot(details, pcpFeatures, showRace, stateCode = null) {
         .text(title);
 }
 
+// Add transition effects to moving dimensions
 function updateAxes(svg, x) {
     svg.selectAll(".dimension")
         .transition().duration(500)
         .attr("transform", d => `translate(${x(d)}, 0)`);
 }
 
+// Redraw lines if a dimension has been shifted
 function redrawLines(svg, featuresOrdered, x, y) {
     const line = d3.line();
     svg.selectAll("path.foreground")
